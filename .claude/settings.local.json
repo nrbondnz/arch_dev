@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3)",
+      "Bash(python3 -c ':*)",
+      "Read(//c/tools/Obsidian Vault/Everything/Spaces/projects and ideas/Arch Developments/**)",
+      "Read(//mnt/c/tools/Obsidian Vault/Everything/Spaces/projects and ideas/**)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter.bat analyze:*)",
+      "Bash(cmd /c \"flutter analyze lib/ 2>&1\")",
+      "Bash(powershell -Command \"cd 'C:\\\\dev\\\\flutter_projs\\\\arch_dev'; flutter analyze lib/ 2>&1\")"
+    ]
+  }
+}
