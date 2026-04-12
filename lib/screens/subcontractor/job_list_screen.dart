@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../../models/ModelProvider.dart';
 import '../../services/job_service.dart';
-import '../../utils/status_helpers.dart';
 import '../../widgets/status_badge.dart';
 import 'job_detail_screen.dart';
 

@@ -169,9 +169,9 @@ class _SubcontractorDashboardScreenState extends State<SubcontractorDashboardScr
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.05),
+                          color: Colors.grey.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                          border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
                         ),
                         child: const Center(
                           child: Text(
@@ -232,7 +232,7 @@ class _QuickAction extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
                 child: Icon(icon, color: color, size: 24),
               ),
               const SizedBox(height: 6),

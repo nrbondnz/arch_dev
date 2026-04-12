@@ -38,6 +38,7 @@ const schema = a.schema({
       submittedAt: a.datetime(),
       acceptedAt: a.datetime(),
       lineItems: a.hasMany("QuoteLineItem", "quoteId"),
+      claims: a.hasMany("Claim", "quoteId"),
     })
     .secondaryIndexes((index) => [index("status")])
     .authorization((allow) => [
@@ -60,6 +61,26 @@ const schema = a.schema({
     .authorization((allow) => [
       allow.owner(),
       allow.groups(["main-contractor", "qs"]).to(["read"]),
+    ]),
+
+  // ── Claim ──────────────────────────────────────────────────────────────────
+  Claim: a
+    .model({
+      quoteId: a.id().required(),
+      quote: a.belongsTo("Quote", "quoteId"),
+      claimNumber: a.integer().required(),
+      status: a.enum(["Draft", "Submitted", "Approved", "Paid"]),
+      claimAmount: a.float().required(),
+      retention: a.float().default(0),
+      netClaim: a.float().required(),
+      submittedAt: a.datetime(),
+      approvedAt: a.datetime(),
+    })
+    .secondaryIndexes((index) => [index("status")])
+    .authorization((allow) => [
+      allow.owner(),
+      allow.groups(["main-contractor"]).to(["read", "update"]),
+      allow.groups(["qs"]).to(["read"]),
     ]),
 });
 

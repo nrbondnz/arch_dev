@@ -3,6 +3,7 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../services/sample_data_service.dart';
 import 'subcontractor/dashboard_screen.dart';
 import 'contractor/dashboard_screen.dart';
 
@@ -111,6 +112,23 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                   MaterialPageRoute(builder: (_) => const ContractorDashboardScreen(isQS: true)),
                 ),
               ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () async {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Generating sample data...')),
+                  );
+                  await SampleDataService.generateSampleData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sample data generated!')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.playlist_add),
+                label: const Text('Generate Sample Data'),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -138,7 +156,7 @@ class _RoleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       borderRadius: BorderRadius.circular(16),
-      color: color.withOpacity(0.07),
+      color: color.withValues(alpha: 0.07),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
@@ -148,7 +166,7 @@ class _RoleTile extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
                 child: Icon(icon, color: color, size: 28),
               ),
               const SizedBox(width: 16),

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../../models/ModelProvider.dart';
 import '../../services/quote_service.dart';
-import '../../utils/status_helpers.dart';
 import '../../widgets/status_badge.dart';
 import 'quote_builder_screen.dart';
 import 'daily_log_screen.dart';

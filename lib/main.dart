@@ -148,7 +148,7 @@ class _StartPageState extends State<_StartPage> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A56DB).withOpacity(0.1),
+                    color: const Color(0xFF1A56DB).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.business, size: 64, color: Color(0xFF1A56DB)),

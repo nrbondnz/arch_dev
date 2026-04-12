@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 
 class AuthService {
@@ -8,12 +9,13 @@ class AuthService {
   static Future<String?> getCurrentUserGroup() async {
     try {
       final session = await Amplify.Auth.fetchAuthSession();
-      final cognitoSession = session as CognitoAuthSession;
-      final idToken = cognitoSession.userPoolTokensResult.value.idToken;
-      final payload = _decodeJwtPayload(idToken.raw);
-      final groups = payload['cognito:groups'];
-      if (groups is List && groups.isNotEmpty) {
-        return groups.first as String;
+      if (session is CognitoAuthSession) {
+        final tokens = session.userPoolTokensResult.value;
+        final payload = _decodeJwtPayload(tokens.idToken.raw);
+        final groups = payload['cognito:groups'];
+        if (groups is List && groups.isNotEmpty) {
+          return groups.first as String;
+        }
       }
       return null;
     } on Exception catch (e) {
