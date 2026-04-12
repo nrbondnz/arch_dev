@@ -53,11 +53,11 @@ class _DailyLogScreenState extends State<DailyLogScreen> {
             // Job selection
             const _SectionLabel('Job'),
             DropdownButtonFormField<String>(
-              value: 'J001 – Fitzroy Residential',
+              value: 'J001 – Parnell Residential',
               decoration: const InputDecoration(border: OutlineInputBorder()),
               items: const [
-                DropdownMenuItem(value: 'J001 – Fitzroy Residential', child: Text('J001 – Fitzroy Residential')),
-                DropdownMenuItem(value: 'J002 – North Melbourne Commercial', child: Text('J002 – North Melbourne Commercial')),
+                DropdownMenuItem(value: 'J001 – Parnell Residential', child: Text('J001 – Parnell Residential')),
+                DropdownMenuItem(value: 'J002 – Wynyard Quarter Commercial', child: Text('J002 – Wynyard Quarter Commercial')),
               ],
               onChanged: (_) {},
             ),

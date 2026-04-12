@@ -210,8 +210,8 @@ class _QuotesApprovalTab extends StatelessWidget {
         const SizedBox(height: 12),
         _ApprovalCard(
           ref: 'Q-002',
-          subcontractor: 'Apex Brickwork Pty Ltd',
-          jobName: 'J001 – Fitzroy Residential',
+          subcontractor: 'Pacific Masonry Ltd',
+          jobName: 'J001 – Parnell Residential',
           description: 'Stage 2 – Blockwork (internal walls)',
           value: '\$62,000 ex. GST',
           status: JobStatus.submitted,
@@ -222,8 +222,8 @@ class _QuotesApprovalTab extends StatelessWidget {
         ),
         _ApprovalCard(
           ref: 'Q-004',
-          subcontractor: 'Melbourne Masonry Co.',
-          jobName: 'J003 – Collingwood Warehouse',
+          subcontractor: 'Auckland Masonry Co.',
+          jobName: 'J003 – East Tāmaki Warehouse',
           description: 'Full brickwork package – warehouse shell',
           value: '\$210,000 ex. GST',
           status: JobStatus.submitted,
@@ -252,8 +252,8 @@ class _VariationsApprovalTab extends StatelessWidget {
         const SizedBox(height: 12),
         _ApprovalCard(
           ref: 'V-003',
-          subcontractor: 'Apex Brickwork Pty Ltd',
-          jobName: 'J001 – Fitzroy Residential',
+          subcontractor: 'Pacific Masonry Ltd',
+          jobName: 'J001 – Parnell Residential',
           description: 'Brick type change – east facade (heritage brick specified)',
           value: '\$3,400 ex. GST',
           status: JobStatus.pending,
@@ -265,8 +265,8 @@ class _VariationsApprovalTab extends StatelessWidget {
         // Approved variation (read-only)
         _ApprovalCard(
           ref: 'V-001',
-          subcontractor: 'Apex Brickwork Pty Ltd',
-          jobName: 'J001 – Fitzroy Residential',
+          subcontractor: 'Pacific Masonry Ltd',
+          jobName: 'J001 – Parnell Residential',
           description: 'Additional lintels – window revisions (SI-007)',
           value: '\$4,200 ex. GST',
           status: JobStatus.approved,
@@ -343,8 +343,8 @@ class _ClaimDetailCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 4),
-            const Text('J001 – Fitzroy Residential', style: TextStyle(color: Colors.black54, fontSize: 13)),
-            const Text('Apex Brickwork Pty Ltd', style: TextStyle(color: Colors.black38, fontSize: 12)),
+            const Text('J001 – Parnell Residential', style: TextStyle(color: Colors.black54, fontSize: 13)),
+            const Text('Pacific Masonry Ltd', style: TextStyle(color: Colors.black38, fontSize: 12)),
             const Divider(height: 20),
 
             // Financials

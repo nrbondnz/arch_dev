@@ -8,3 +8,15 @@ backend:
   cache:
     paths:
       - .npm/**/*
+frontend:
+  phases:
+    build:
+      commands:
+        - echo "No web frontend – Flutter app built and distributed separately"
+  artifacts:
+    baseDirectory: /
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - .npm/**/*

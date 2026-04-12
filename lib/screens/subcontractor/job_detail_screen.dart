@@ -181,7 +181,7 @@ class _OverviewTab extends StatelessWidget {
           const Text('Open Issues', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           _IssueTile(title: 'Brick coursing misalignment – Grid F3', severity: 'Minor', raised: '08 Apr 2026'),
-          _IssueTile(title: 'Mortar colour variance – East elevation', severity: 'Observation', raised: '10 Apr 2026'),
+          _IssueTile(title: 'Mortar colour variance – north elevation', severity: 'Observation', raised: '10 Apr 2026'),
         ],
       ),
     );

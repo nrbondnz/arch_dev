@@ -20,7 +20,7 @@ class _LineItem {
 }
 
 class _QuoteBuilderScreenState extends State<QuoteBuilderScreen> {
-  final _jobController = TextEditingController(text: 'J001 – Fitzroy Residential');
+  final _jobController = TextEditingController(text: 'J001 – Parnell Residential');
   final _notesController = TextEditingController();
   final _exclusionsController = TextEditingController();
 
@@ -50,11 +50,11 @@ class _QuoteBuilderScreenState extends State<QuoteBuilderScreen> {
             // Job selection
             const _SectionHeader(title: 'Job Details'),
             DropdownButtonFormField<String>(
-              value: 'J001 – Fitzroy Residential',
+              value: 'J001 – Parnell Residential',
               decoration: const InputDecoration(labelText: 'Job', border: OutlineInputBorder()),
               items: const [
-                DropdownMenuItem(value: 'J001 – Fitzroy Residential', child: Text('J001 – Fitzroy Residential')),
-                DropdownMenuItem(value: 'J003 – Collingwood Warehouse', child: Text('J003 – Collingwood Warehouse')),
+                DropdownMenuItem(value: 'J001 – Parnell Residential', child: Text('J001 – Parnell Residential')),
+                DropdownMenuItem(value: 'J003 – East Tāmaki Warehouse', child: Text('J003 – East Tāmaki Warehouse')),
               ],
               onChanged: (_) {},
             ),
