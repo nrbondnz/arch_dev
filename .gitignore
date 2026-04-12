@@ -49,3 +49,6 @@ node_modules
 .amplify
 amplify_outputs*
 amplifyconfiguration*
+
+# Git worktrees (used for parallel branch work)
+/worktrees/

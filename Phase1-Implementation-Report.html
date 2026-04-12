@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCH Developments — Phase 1 Implementation Report</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #2d3748;
+    background: #f5f7fa;
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  /* ── Header Banner ─────────────────────────────────────────── */
+  .banner {
+    background: #1a3a5c;
+    color: #ffffff;
+    padding: 2.5rem 3rem 2rem 3rem;
+    border-bottom: 6px solid #1A56DB;
+  }
+  .banner .brand {
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin-bottom: 0.5rem;
+  }
+  .banner h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+  .banner .subtitle {
+    font-size: 1.05rem;
+    opacity: 0.92;
+  }
+  .banner .meta {
+    margin-top: 1.25rem;
+    display: flex;
+    gap: 2rem;
+    font-size: 0.85rem;
+    opacity: 0.88;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 1rem;
+  }
+
+  /* ── Content Container ────────────────────────────────────── */
+  .content {
+    padding: 2.5rem 3rem;
+  }
+
+  h2 {
+    color: #1a3a5c;
+    font-size: 1.55rem;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  h2:first-of-type { margin-top: 0; }
+  h3 {
+    color: #1A56DB;
+    font-size: 1.15rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  p { margin-bottom: 0.85rem; }
+  ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+  li { margin-bottom: 0.35rem; }
+
+  /* ── Table of Contents ─────────────────────────────────────── */
+  .toc {
+    background: #f5f7fa;
+    border-left: 4px solid #1A56DB;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: 2px;
+  }
+  .toc h3 {
+    margin-top: 0;
+    color: #1a3a5c;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+  }
+  .toc ol { margin: 0 0 0 1.25rem; }
+  .toc a {
+    color: #1a3a5c;
+    text-decoration: none;
+  }
+  .toc a:hover { color: #1A56DB; text-decoration: underline; }
+
+  /* ── By The Numbers Callout ───────────────────────────────── */
+  .stats {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0 1rem 0;
+    flex-wrap: wrap;
+  }
+  .stat {
+    flex: 1 1 180px;
+    background: #f5f7fa;
+    border-left: 4px solid #1A56DB;
+    padding: 1rem 1.25rem;
+    border-radius: 2px;
+  }
+  .stat .number {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #1a3a5c;
+    line-height: 1.1;
+  }
+  .stat .label {
+    font-size: 0.85rem;
+    color: #4a5568;
+    margin-top: 0.25rem;
+  }
+
+  /* ── Feature Blocks ───────────────────────────────────────── */
+  .feature {
+    background: #fcfcfd;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .feature.primary {
+    border-left: 4px solid #0E9F6E;
+  }
+  .feature .feature-title {
+    font-weight: 600;
+    color: #1a3a5c;
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* ── Status Badges ────────────────────────────────────────── */
+  .badge {
+    display: inline-block;
+    padding: 0.2em 0.7em;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .badge-complete { background: #d1fae5; color: #065f46; }
+  .badge-partial  { background: #fef3c7; color: #92400e; }
+  .badge-planned  { background: #e2e8f0; color: #475569; }
+  .badge-not-started { background: #fee2e2; color: #991b1b; }
+
+  /* ── Tables ───────────────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem 0;
+    font-size: 0.92rem;
+  }
+  th {
+    background: #1a3a5c;
+    color: #ffffff;
+    text-align: left;
+    padding: 0.65rem 0.85rem;
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  td {
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f9fafb; }
+
+  .req-ref {
+    font-family: 'SF Mono', Consolas, Monaco, monospace;
+    font-size: 0.82rem;
+    color: #1A56DB;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .req-group {
+    background: #eef2f7 !important;
+    font-weight: 600;
+    color: #1a3a5c;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Coverage Summary Bar ─────────────────────────────────── */
+  .coverage-summary {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  .coverage-bar {
+    flex: 1;
+    padding: 0.9rem 1rem;
+    text-align: center;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  .coverage-bar .num {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .cov-complete { background: #d1fae5; color: #065f46; }
+  .cov-partial  { background: #fef3c7; color: #92400e; }
+  .cov-planned  { background: #e2e8f0; color: #475569; }
+
+  /* ── Callouts ─────────────────────────────────────────────── */
+  .callout {
+    background: #eff6ff;
+    border-left: 4px solid #1A56DB;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    border-radius: 2px;
+  }
+  .callout strong { color: #1a3a5c; }
+
+  .callout-success {
+    background: #f0fdf4;
+    border-left-color: #0E9F6E;
+  }
+
+  /* ── Footer ───────────────────────────────────────────────── */
+  .footer {
+    background: #1a3a5c;
+    color: #cbd5e1;
+    padding: 1.5rem 3rem;
+    text-align: center;
+    font-size: 0.8rem;
+  }
+  .footer strong { color: #ffffff; }
+
+  /* ── Print Styles ─────────────────────────────────────────── */
+  @page { margin: 1.5cm; }
+  @media print {
+    body { background: #ffffff; font-size: 11pt; }
+    .page { box-shadow: none; max-width: 100%; }
+    .banner { padding: 1.5rem 2rem 1.25rem 2rem; }
+    .banner h1 { font-size: 1.6rem; }
+    .content { padding: 1.5rem 2rem; }
+    h2 { font-size: 1.25rem; margin-top: 1.5rem; page-break-after: avoid; }
+    h3 { page-break-after: avoid; }
+    .feature, table, .stats, .callout, .coverage-summary { page-break-inside: avoid; }
+    tr { page-break-inside: avoid; }
+    .toc { page-break-after: always; }
+    a { color: #1a3a5c; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══════════════ HEADER BANNER ═══════════════ -->
+  <div class="banner">
+    <div class="brand">ARCH Developments</div>
+    <h1>Phase 1 Implementation Report</h1>
+    <div class="subtitle">Sub-Contractor Management System — Delivery Summary</div>
+    <div class="meta">
+      <div><strong>Version:</strong> 1.0</div>
+      <div><strong>Date:</strong> April 2026</div>
+      <div><strong>Status:</strong> Phase 1 Complete</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══════════════ TABLE OF CONTENTS ═══════════════ -->
+    <div class="toc">
+      <h3>Contents</h3>
+      <ol>
+        <li><a href="#summary">Executive Summary</a></li>
+        <li><a href="#built">What We Built</a></li>
+        <li><a href="#in-progress">Screens Started But Not Yet Connected</a></li>
+        <li><a href="#coverage">Requirements Coverage</a></li>
+        <li><a href="#next">What Comes Next</a></li>
+        <li><a href="#technical">Technical Summary (Appendix)</a></li>
+      </ol>
+    </div>
+
+    <!-- ═══════════════ 1. EXECUTIVE SUMMARY ═══════════════ -->
+    <h2 id="summary">1. Executive Summary</h2>
+
+    <p>The ARCH Sub-Contractor Management System is a custom-built web application designed to manage the full lifecycle of a subcontractor's work on a building project — from an initial enquiry, through quoting, daily progress, variations, progress claims, completion, and retention release. The primary user is the brick and stone crew, with supporting views for the main contractor and quantity surveyor.</p>
+
+    <p><strong>Phase 1 focused on the foundations:</strong> getting sub-contractors, main contractors, and quantity surveyors set up with secure logins, and delivering the complete <em>quoting engine</em> — the ability to create a job, build a detailed quote line by line, submit it for approval, and have the main contractor accept or decline it, with the system automatically moving the job forward.</p>
+
+    <div class="callout callout-success">
+      <strong>Key outcome:</strong> The core quoting workflow is fully operational end-to-end. A sub-contractor can now create a job and build a quote in the browser. When submitted, the main contractor sees it in their dashboard and can approve or decline it. On acceptance, the job automatically moves to "Contracted" status with the agreed value locked in. This replaces the current email/paper-based process for quoting.
+    </div>
+
+    <p>The system is deployed on AWS (Amazon Web Services) and accessible through a standard web browser. User accounts are managed through industry-standard secure sign-in. Sample data can be generated on demand for demonstrations and testing.</p>
+
+    <h3>By the Numbers</h3>
+    <div class="stats">
+      <div class="stat">
+        <div class="number">3</div>
+        <div class="label">User roles supported (Sub-contractor, Main Contractor, QS)</div>
+      </div>
+      <div class="stat">
+        <div class="number">16</div>
+        <div class="label">Requirements delivered or partially delivered in Phase 1</div>
+      </div>
+      <div class="stat">
+        <div class="number">9</div>
+        <div class="label">Screens built (5 fully wired, 4 with design ready for Phase 2)</div>
+      </div>
+      <div class="stat">
+        <div class="number">End&#8209;to&#8209;end</div>
+        <div class="label">Quoting workflow from creation to acceptance</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ 2. WHAT WE BUILT ═══════════════ -->
+    <h2 id="built">2. What We Built</h2>
+
+    <p>Phase 1 delivered five feature areas, all live and working against real data stored in the cloud.</p>
+
+    <h3>2.1  Signing In &amp; User Roles</h3>
+    <div class="feature">
+      <div class="feature-title">Secure login with role-based views</div>
+      <p>Users sign up and log in using their email address. The system supports three distinct roles, and each sees a tailored view appropriate to their responsibilities:</p>
+      <ul>
+        <li><strong>Sub-contractor</strong> — the primary user. Your brick and stone crew. Sees jobs, quotes, and the tools for getting work done and paid.</li>
+        <li><strong>Main Contractor</strong> — the builder you work for. Sees a list of submitted quotes and can approve or decline them.</li>
+        <li><strong>Quantity Surveyor (QS)</strong> — the person who reviews and values work claims. Gets a dashboard tuned for review and approval tasks.</li>
+      </ul>
+      <p>User roles are held centrally on the sign-in system so that each person automatically lands on the correct dashboard after logging in, with no manual selection required.</p>
+    </div>
+
+    <h3>2.2  Managing Jobs</h3>
+    <div class="feature">
+      <div class="feature-title">Capturing and tracking jobs through their lifecycle</div>
+      <p>Sub-contractors can create a new job at any time with the key details: job name, client, location, and a description of the work. Every job moves through a strict lifecycle that the system enforces automatically:</p>
+      <ul>
+        <li><strong>Enquiry</strong> — new job, no quote yet submitted</li>
+        <li><strong>Quoted</strong> — a quote has been sent to the main contractor</li>
+        <li><strong>Contracted</strong> — quote has been accepted, work is agreed</li>
+      </ul>
+      <p>A filtered job list makes it easy to see only jobs in a given state — for example, all jobs awaiting a quote response. Tapping into a job opens a detail view organised into tabs: Overview, Quotes, Variations, and Claims. The Overview and Quotes tabs are live against the database; Variations and Claims are previewed with example data and will be wired up in Phase 2.</p>
+      <p>The system also protects the integrity of your data: contract values cannot be negative, and jobs cannot skip forward in the lifecycle (for example, a job cannot be marked Contracted unless it has an accepted quote).</p>
+    </div>
+
+    <h3>2.3  The Quoting Engine <span class="badge badge-complete">Primary Deliverable</span></h3>
+    <div class="feature primary">
+      <div class="feature-title">Line-by-line quote building with automatic totals</div>
+      <p>This is the heart of Phase 1 and the most substantial piece of functionality delivered. Sub-contractors can now build a fully-formed quote in the browser, replacing the current email/spreadsheet approach.</p>
+
+      <p><strong>Building the quote:</strong></p>
+      <ul>
+        <li>Select an existing job, or create a new job right from the quote builder</li>
+        <li>Give the quote a title (e.g. "Face brickwork — Stage 1")</li>
+        <li>Add as many line items as needed, each with: description, unit of measure, quantity, and rate</li>
+        <li>Units supported: square metres (m²), linear metres (lm), number (no.), hours (hrs), and lump sum</li>
+        <li>The total for each line calculates automatically (quantity × rate)</li>
+        <li>The overall running subtotal, GST (15%), and total including GST update live as you go</li>
+      </ul>
+
+      <p><strong>Protecting your position:</strong></p>
+      <ul>
+        <li>A dedicated <em>Exclusions &amp; Assumptions</em> field lets you clearly call out what is not included and what assumptions your price is based on</li>
+        <li>A <em>Notes</em> field for any additional context for the main contractor</li>
+        <li>Every quote has a validity period (default 30 days). After that, the system will refuse to accept an expired quote — forcing a fresh conversation rather than a surprise cost dispute</li>
+      </ul>
+
+      <p><strong>Review before submitting:</strong></p>
+      <ul>
+        <li>At any point you can save the quote as a draft and come back to it later</li>
+        <li>Before final submission, a review screen summarises the full breakdown: every line, the exclusions, the notes, the subtotal, the GST, and the total — so nothing goes out without a final check</li>
+      </ul>
+
+      <p><strong>What happens when you submit:</strong></p>
+      <ul>
+        <li>The quote status moves from <em>Draft</em> to <em>Submitted</em></li>
+        <li>The associated job automatically moves from <em>Enquiry</em> to <em>Quoted</em></li>
+        <li>The submission date is time-stamped for the validity period to run from</li>
+        <li>The quote now appears in the main contractor's dashboard for review</li>
+      </ul>
+    </div>
+
+    <h3>2.4  Quote Approval (Main Contractor / QS)</h3>
+    <div class="feature">
+      <div class="feature-title">Approve or decline with comments — automatic downstream effects</div>
+      <p>When a main contractor logs in, they are taken directly to a dedicated approval dashboard. The Quotes tab shows all submitted quotes grouped by status (Submitted, Accepted, Rejected), with summary counts at the top.</p>
+
+      <p>For each pending quote, two actions are available:</p>
+      <ul>
+        <li><strong>Approve</strong> — with an optional comment. On approval, the system performs several checks and updates in a single, safe operation:
+          <ul>
+            <li>Confirms the quote has not expired (validity period still active)</li>
+            <li>Confirms no other quote for the same job has already been accepted (only one can be)</li>
+            <li>Moves the quote to <em>Accepted</em> status with the acceptance date recorded</li>
+            <li>Automatically advances the job to <em>Contracted</em> status</li>
+            <li>Locks in the quote total as the agreed contract value on the job</li>
+          </ul>
+          If any step in this sequence fails, the whole operation is rolled back so the data stays consistent.</li>
+        <li><strong>Decline</strong> — with a required reason. The quote moves to <em>Rejected</em> and the reason is captured.</li>
+      </ul>
+
+      <p>This single feature replaces what is currently a back-and-forth of emails, phone calls, and manual contract value tracking.</p>
+    </div>
+
+    <h3>2.5  The Sub-contractor Dashboard</h3>
+    <div class="feature">
+      <div class="feature-title">Everything at a glance</div>
+      <p>When a sub-contractor logs in, they see a dashboard with:</p>
+      <ul>
+        <li><strong>A personalised greeting</strong> using their name</li>
+        <li><strong>Summary tiles</strong> showing the number of active jobs and the number of quotes pending main contractor response — both live from the database</li>
+        <li><strong>Quick-action buttons</strong> for the most common tasks: New Quote, Log Progress, Raise Variation, Submit Claim</li>
+        <li><strong>Pull-to-refresh</strong> to fetch the latest data at any time</li>
+      </ul>
+    </div>
+
+    <h3>2.6  Demonstration &amp; Testing Tools</h3>
+    <div class="feature">
+      <div class="feature-title">Sample data generator</div>
+      <p>For demonstrations, training, and testing, a single button creates a realistic set of sample jobs in different states — including jobs still at enquiry, jobs with quotes submitted, and jobs already contracted with draft claims in progress. This gives new users something meaningful to explore without needing to type everything from scratch.</p>
+    </div>
+
+    <!-- ═══════════════ 3. IN PROGRESS ═══════════════ -->
+    <h2 id="in-progress">3. Screens Started But Not Yet Connected</h2>
+
+    <p>As part of Phase 1, several additional screens were built as user interface designs so the layout and flow could be validated with the team. These screens are visible in the app but are currently showing example data — they are not yet saving to the database. This gives us a head start on Phase 2: the screens already exist, they just need to be wired up to the backend.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Screen</th>
+          <th>Current State</th>
+          <th>When It Will Be Connected</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Daily Progress Log</strong><br><span style="font-size:0.85em;color:#666">Form for recording labour hours, work completed, materials, delays, photos</span></td>
+          <td>Layout and fields complete. Shows sample job list. Not yet saving data.</td>
+          <td>Phase 2</td>
+        </tr>
+        <tr>
+          <td><strong>Variation Request</strong><br><span style="font-size:0.85em;color:#666">Form for raising and pricing a scope change</span></td>
+          <td>Layout, reason dropdown, and pricing fields complete. Not yet saving data.</td>
+          <td>Phase 3</td>
+        </tr>
+        <tr>
+          <td><strong>Progress Claim Builder</strong><br><span style="font-size:0.85em;color:#666">Monthly claim with measured work, variations, retention calculation</span></td>
+          <td>Full layout with example line items, retention, and claim total calculation. Not yet saving data.</td>
+          <td>Phase 4</td>
+        </tr>
+        <tr>
+          <td><strong>Contractor Variations &amp; Claims Tabs</strong><br><span style="font-size:0.85em;color:#666">Approval views for the main contractor / QS</span></td>
+          <td>Layout complete with example data. Quotes tab is live; Variations and Claims tabs will follow.</td>
+          <td>Phases 3 &amp; 4</td>
+        </tr>
+        <tr>
+          <td><strong>Document &amp; Photo Management</strong><br><span style="font-size:0.85em;color:#666">Attachments for drawings, specs, site photos</span></td>
+          <td>Visual placeholder in job detail. File upload not yet implemented.</td>
+          <td>Phase 2</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>Why this matters:</strong> Having the screens designed in Phase 1 means Phase 2 is not starting from a blank canvas. The team has seen and used the proposed layouts, any feedback can be captured early, and the work in Phase 2 is mainly back-end wiring — a lower-risk activity than designing from scratch.
+    </div>
+
+    <!-- ═══════════════ 4. REQUIREMENTS COVERAGE ═══════════════ -->
+    <h2 id="coverage">4. Requirements Coverage</h2>
+
+    <p>The original requirements document identified 82 functional requirements across the full system. Phase 1 deliberately targeted a subset covering job creation, the quoting workflow, basic dashboard, and the rules needed for quotes to flow through to contract. The table below shows the status of each Phase 1 requirement.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:80px">Ref</th>
+          <th>Requirement</th>
+          <th style="width:110px">Status</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="4" class="req-group">Job &amp; Scope Management</td></tr>
+        <tr>
+          <td class="req-ref">FR-01</td>
+          <td>Create jobs from enquiries</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Job creation via list screen and quote builder</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-02</td>
+          <td>Attach drawings, specs, site details to jobs</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>Placeholder list in job detail; upload in Phase 2</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-03</td>
+          <td>Track job status and contract value</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Status and contract value stored and displayed</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-04</td>
+          <td>Job status lifecycle (full eight states)</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>Enquiry → Quoted → Contracted implemented; later states in Phase 5</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-05</td>
+          <td>Status transitions follow state machine (no skipping)</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>Enforced for Phase 1 states; remaining states in Phase 5</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-06</td>
+          <td>Contract value must be ≥ 0</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Validated on both create and update</td>
+        </tr>
+
+        <tr><td colspan="4" class="req-group">Quoting &amp; Contract Formation</td></tr>
+        <tr>
+          <td class="req-ref">FR-08</td>
+          <td>Build quotes from line items (description, qty, unit, rate)</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Full line-item builder with five unit types</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-09</td>
+          <td>Track exclusions and assumptions (free text)</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Dedicated field on the quote</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-10</td>
+          <td>Show running total during quote building</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Updates live as line items change</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-11</td>
+          <td>Quote status flow: Draft → Submitted → Accepted | Rejected</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Full state machine enforced</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-12</td>
+          <td>Only one accepted quote per job</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Checked at point of acceptance</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-13</td>
+          <td>Quote total equals sum of line item amounts</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Automatically recalculated on any change</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-14</td>
+          <td>Summary/review screen before submission</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Confirmation dialog with full breakdown</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-15</td>
+          <td>Quote card shows status and timeline</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Shows created, submitted, accepted dates</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-16</td>
+          <td>Select existing job or create new job when starting a quote</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Inline job creation from quote builder</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-67</td>
+          <td>Quotes have a validity period; expired quotes cannot be accepted</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>Period stored and enforced on acceptance; no visible expiry warning yet</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-68</td>
+          <td>Job cannot progress past Quoted without an accepted quote</td>
+          <td><span class="badge badge-complete">Complete</span></td>
+          <td>Enforced by state machine</td>
+        </tr>
+
+        <tr><td colspan="4" class="req-group">Dashboard</td></tr>
+        <tr>
+          <td class="req-ref">FR-51</td>
+          <td>Dashboard showing active jobs, quotes, variations, claims</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>Jobs and quotes live; variations and claims tiles to follow</td>
+        </tr>
+        <tr>
+          <td class="req-ref">FR-52</td>
+          <td>Primary actions from dashboard (new quote, log progress, variation, claim)</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>All four buttons visible; New Quote is fully wired</td>
+        </tr>
+
+        <tr><td colspan="4" class="req-group">Notifications</td></tr>
+        <tr>
+          <td class="req-ref">FR-53</td>
+          <td>Notify main contractor when quote is submitted</td>
+          <td><span class="badge badge-planned">Phase 2+</span></td>
+          <td>Quote visible in dashboard; email/push alerts in Phase 6</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="coverage-summary">
+      <div class="coverage-bar cov-complete">
+        <span class="num">12</span>
+        Complete
+      </div>
+      <div class="coverage-bar cov-partial">
+        <span class="num">6</span>
+        Partial
+      </div>
+      <div class="coverage-bar cov-planned">
+        <span class="num">1</span>
+        Planned (later phase)
+      </div>
+    </div>
+
+    <!-- ═══════════════ 5. WHAT COMES NEXT ═══════════════ -->
+    <h2 id="next">5. What Comes Next</h2>
+
+    <p>With the quoting foundation in place, the next phases add the day-to-day site management features and the billing engine. The broad direction is to keep each phase producing something the business can use, rather than building silently in the background.</p>
+
+    <h3>Phase 2 — Daily Progress &amp; Documents</h3>
+    <ul>
+      <li><strong>Daily Progress Log</strong> — record labour hours, work completed, materials used, delays, and site photos for each day of work on each job. This is the evidence base for later claims.</li>
+      <li><strong>Document &amp; photo upload</strong> — attach drawings, RAMS, contracts, and site photos to jobs</li>
+      <li><strong>Notifications</strong> — first round of email alerts (quote submitted, quote accepted/rejected)</li>
+    </ul>
+
+    <h3>Phase 3 — Variations</h3>
+    <ul>
+      <li><strong>Raise a variation</strong> — capture a scope change with reason, description, price, and programme impact</li>
+      <li><strong>Variation approval</strong> — main contractor / QS approve or decline variations with comments</li>
+      <li><strong>Automatic contract value update</strong> — on approval, the variation flows into the contract value and tags to appear in the next claim</li>
+    </ul>
+
+    <h3>Phase 4 — Progress Claims &amp; Billing</h3>
+    <ul>
+      <li><strong>Monthly claim builder</strong> — auto-populated from daily logs and approved variations, with manual adjustment</li>
+      <li><strong>Retention calculation</strong> — tiered retention applied automatically</li>
+      <li><strong>QS review workflow</strong> — claim submitted, reviewed, approved (or adjusted), and marked paid</li>
+      <li><strong>PDF generation</strong> — automatic claim document generated and attached</li>
+    </ul>
+
+    <h3>Phase 5 — Full Job Lifecycle &amp; Completion</h3>
+    <ul>
+      <li><strong>Mobilisation checklist</strong> — RAMS, insurance, induction, materials, scaffolding tracked before work starts</li>
+      <li><strong>Practical completion &amp; defects</strong> — walk-through, defect tracking, sign-off</li>
+      <li><strong>Retention release</strong> — partial at practical completion, final after defects period</li>
+    </ul>
+
+    <h3>Phase 6 — Polish &amp; Integrations</h3>
+    <ul>
+      <li><strong>Search</strong> — find anything across jobs, sites, and documents</li>
+      <li><strong>Accounting integration</strong> — optional connector to Xero or MYOB</li>
+      <li><strong>Offline support</strong> — daily logs work on poor site connectivity and sync when reconnected</li>
+      <li><strong>Production hardening</strong> — monitoring, alerting, deployment pipeline</li>
+    </ul>
+
+    <!-- ═══════════════ 6. TECHNICAL SUMMARY ═══════════════ -->
+    <h2 id="technical">6. Technical Summary <span style="font-size:0.7em;color:#666;font-weight:normal">(Appendix)</span></h2>
+
+    <p>For reference, the following is a non-technical summary of how the system is put together. None of this requires action from the business owner, but it's included for transparency and to support future conversations with auditors, insurers, or prospective partners.</p>
+
+    <h3>Technology</h3>
+    <ul>
+      <li><strong>Front end (what the user sees):</strong> Flutter — a modern Google framework that lets us build one application that runs in any web browser and, in future, can also be packaged as an iOS or Android app from the same codebase.</li>
+      <li><strong>Back end (where the data lives):</strong> AWS Amplify Gen 2 — Amazon's managed cloud application platform. All data is stored in Amazon DynamoDB, a reliable cloud database used by many large organisations.</li>
+      <li><strong>Sign-in security:</strong> Amazon Cognito — the same industry-standard sign-in service used by many major applications.</li>
+      <li><strong>Hosting:</strong> AWS Amplify Hosting — automatically deploys new versions and serves the application globally with high availability.</li>
+    </ul>
+
+    <h3>How the Data Is Organised</h3>
+    <p>The system's data is structured around a simple, clear model:</p>
+    <ul>
+      <li>A <strong>Job</strong> is the top-level record and holds all work for a single project.</li>
+      <li>Each Job contains one or more <strong>Quotes</strong> (though only one can ever be accepted).</li>
+      <li>Each Quote contains multiple <strong>Line Items</strong> describing the work and price.</li>
+      <li>Each Quote can have one or more <strong>Claims</strong> against it as work progresses (the structure is in place ready for Phase 4 to build on).</li>
+    </ul>
+
+    <h3>Security &amp; Access Control</h3>
+    <p>Data access is enforced at the database level, not just in the application — this matters because it means even a bug in the app cannot accidentally expose data to the wrong user:</p>
+    <ul>
+      <li>Sub-contractors can only see and edit their own jobs and quotes</li>
+      <li>Main contractors can read their sub-contractors' jobs and quotes, and update the status of quotes they approve</li>
+      <li>Quantity surveyors have read-only access for review purposes</li>
+      <li>All user passwords are managed and stored by Amazon Cognito, not by us</li>
+    </ul>
+
+    <h3>Reliability</h3>
+    <p>All critical operations (like accepting a quote, which touches both the quote and the job) are written to roll back safely if any step fails — so the data stays consistent even if something goes wrong mid-operation.</p>
+
+  </div>
+
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <div class="footer">
+    <strong>ARCH Developments</strong> — Sub-Contractor Management System<br>
+    Phase 1 Implementation Report &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; Confidential
+  </div>
+
+</div>
+</body>
+</html>
