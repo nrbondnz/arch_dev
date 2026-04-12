@@ -28,9 +28,9 @@ class QuoteService {
 
     // Construct a custom GraphQL document to avoid relationship nullability errors
     const String operationName = 'createQuote';
-    const String document = '''
-      mutation CreateQuote(\$input: CreateQuoteInput!) {
-        $operationName(input: \$input) {
+    const String document = r'''
+      mutation CreateQuote($input: CreateQuoteInput!) {
+        createQuote(input: $input) {
           id
           jobId
           title
@@ -49,6 +49,7 @@ class QuoteService {
       }
     ''';
     
+    final request = ModelMutations.create(quote);
     final GraphQLRequest<Quote> customRequest = GraphQLRequest<Quote>(
       document: document,
       variables: request.variables,
@@ -68,9 +69,9 @@ class QuoteService {
   static Future<Quote?> getQuote(String quoteId) async {
     // Construct a custom GraphQL document to avoid relationship nullability errors
     const String operationName = 'getQuote';
-    const String document = '''
-      query GetQuote(\$id: ID!) {
-        $operationName(id: \$id) {
+    const String document = r'''
+      query GetQuote($id: ID!) {
+        getQuote(id: $id) {
           id
           jobId
           title
@@ -88,6 +89,11 @@ class QuoteService {
         }
       }
     ''';
+
+    final request = ModelQueries.get(
+      Quote.classType,
+      QuoteModelIdentifier(id: quoteId),
+    );
 
     final GraphQLRequest<Quote> customRequest = GraphQLRequest<Quote>(
       document: document,
@@ -108,9 +114,9 @@ class QuoteService {
   static Future<List<Quote>> listQuotesForJob(String jobId) async {
     // Construct a custom GraphQL document to avoid relationship nullability errors
     const String operationName = 'listQuotes';
-    const String document = '''
-      query ListQuotes(\$filter: ModelQuoteFilterInput, \$limit: Int, \$nextToken: String) {
-        $operationName(filter: \$filter, limit: \$limit, nextToken: \$nextToken) {
+    const String document = r'''
+      query ListQuotes($filter: ModelQuoteFilterInput, $limit: Int, $nextToken: String) {
+        listQuotes(filter: $filter, limit: $limit, nextToken: $nextToken) {
           items {
             id
             jobId
@@ -131,6 +137,11 @@ class QuoteService {
         }
       }
     ''';
+
+    final request = ModelQueries.list<Quote>(
+      Quote.classType,
+      where: Quote.JOBID.eq(jobId),
+    );
 
     final GraphQLRequest<PaginatedResult<Quote>> customRequest =
         GraphQLRequest<PaginatedResult<Quote>>(
@@ -152,9 +163,9 @@ class QuoteService {
   static Future<List<Quote>> listQuotesByStatus(QuoteStatus status) async {
     // Construct a custom GraphQL document to avoid relationship nullability errors
     const String operationName = 'listQuotes';
-    const String document = '''
-      query ListQuotes(\$filter: ModelQuoteFilterInput, \$limit: Int, \$nextToken: String) {
-        $operationName(filter: \$filter, limit: \$limit, nextToken: \$nextToken) {
+    const String document = r'''
+      query ListQuotes($filter: ModelQuoteFilterInput, $limit: Int, $nextToken: String) {
+        listQuotes(filter: $filter, limit: $limit, nextToken: $nextToken) {
           items {
             id
             jobId
@@ -175,6 +186,11 @@ class QuoteService {
         }
       }
     ''';
+
+    final request = ModelQueries.list<Quote>(
+      Quote.classType,
+      where: Quote.STATUS.eq(status),
+    );
 
     final GraphQLRequest<PaginatedResult<Quote>> customRequest =
         GraphQLRequest<PaginatedResult<Quote>>(
@@ -200,9 +216,9 @@ class QuoteService {
 
     // Construct a custom GraphQL document to avoid relationship nullability errors
     const String operationName = 'updateQuote';
-    const String document = '''
-      mutation UpdateQuote(\$input: UpdateQuoteInput!, \$condition: ModelQuoteConditionInput) {
-        $operationName(input: \$input, condition: \$condition) {
+    const String document = r'''
+      mutation UpdateQuote($input: UpdateQuoteInput!, $condition: ModelQuoteConditionInput) {
+        updateQuote(input: $input, condition: $condition) {
           id
           jobId
           title
@@ -220,6 +236,8 @@ class QuoteService {
         }
       }
     ''';
+
+    final request = ModelMutations.update(quote);
 
     final GraphQLRequest<Quote> customRequest = GraphQLRequest<Quote>(
       document: document,
@@ -256,11 +274,13 @@ class QuoteService {
       total: total,
     );
 
+    final request = ModelMutations.create(item);
+
     // Construct a custom GraphQL document to avoid relationship nullability errors
     const String operationName = 'createQuoteLineItem';
-    const String document = '''
-      mutation CreateQuoteLineItem(\$input: CreateQuoteLineItemInput!) {
-        $operationName(input: \$input) {
+    const String document = r'''
+      mutation CreateQuoteLineItem($input: CreateQuoteLineItemInput!) {
+        createQuoteLineItem(input: $input) {
           id
           quoteId
           description

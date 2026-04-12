@@ -39,9 +39,9 @@ class JobService {
 
     // Construct a custom GraphQL document to avoid relationship nullability errors
     const String operationName = 'createJob';
-    const String document = '''
-      mutation CreateJob(\$input: CreateJobInput!) {
-        $operationName(input: \$input) {
+    const String document = r'''
+      mutation CreateJob($input: CreateJobInput!) {
+        createJob(input: $input) {
           id
           jobName
           client
@@ -55,6 +55,7 @@ class JobService {
       }
     ''';
 
+    final request = ModelMutations.create(job);
     final GraphQLRequest<Job> customRequest = GraphQLRequest<Job>(
       document: document,
       variables: request.variables,
@@ -74,9 +75,9 @@ class JobService {
   static Future<List<Job>> listJobs({JobStatus? status}) async {
     // Construct a custom GraphQL document to avoid relationship nullability errors
     const String operationName = 'listJobs';
-    const String document = '''
-      query ListJobs(\$filter: ModelJobFilterInput, \$limit: Int, \$nextToken: String) {
-        $operationName(filter: \$filter, limit: \$limit, nextToken: \$nextToken) {
+    const String document = r'''
+      query ListJobs($filter: ModelJobFilterInput, $limit: Int, $nextToken: String) {
+        listJobs(filter: $filter, limit: $limit, nextToken: $nextToken) {
           items {
             id
             jobName
@@ -92,6 +93,11 @@ class JobService {
         }
       }
     ''';
+
+    final request = ModelQueries.list<Job>(
+      Job.classType,
+      where: status != null ? Job.STATUS.eq(status) : null,
+    );
 
     final GraphQLRequest<PaginatedResult<Job>> customRequest =
         GraphQLRequest<PaginatedResult<Job>>(
@@ -113,9 +119,9 @@ class JobService {
   static Future<Job?> getJob(String jobId) async {
     // Construct a custom GraphQL document to avoid relationship nullability errors
     const String operationName = 'getJob';
-    const String document = '''
-      query GetJob(\$id: ID!) {
-        $operationName(id: \$id) {
+    const String document = r'''
+      query GetJob($id: ID!) {
+        getJob(id: $id) {
           id
           jobName
           client
@@ -128,6 +134,11 @@ class JobService {
         }
       }
     ''';
+
+    final request = ModelQueries.get(
+      Job.classType,
+      JobModelIdentifier(id: jobId),
+    );
 
     final GraphQLRequest<Job> customRequest = GraphQLRequest<Job>(
       document: document,
@@ -181,9 +192,9 @@ class JobService {
 
     // Construct a custom GraphQL document to avoid relationship nullability errors
     const String operationName = 'updateJob';
-    const String document = '''
-      mutation UpdateJob(\$input: UpdateJobInput!, \$condition: ModelJobConditionInput) {
-        $operationName(input: \$input, condition: \$condition) {
+    const String document = r'''
+      mutation UpdateJob($input: UpdateJobInput!, $condition: ModelJobConditionInput) {
+        updateJob(input: $input, condition: $condition) {
           id
           jobName
           client
@@ -196,6 +207,8 @@ class JobService {
         }
       }
     ''';
+
+    final request = ModelMutations.update(updated);
 
     final GraphQLRequest<Job> customRequest = GraphQLRequest<Job>(
       document: document,

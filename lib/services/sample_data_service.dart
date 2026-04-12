@@ -93,9 +93,9 @@ class SampleDataService {
       final claim1Request = ModelMutations.create(claim1);
       // Construct a custom GraphQL document to avoid relationship nullability errors
       const String claim1OperationName = 'createClaim';
-      const String claim1Document = '''
-        mutation CreateClaim(\$input: CreateClaimInput!) {
-          $claim1OperationName(input: \$input) {
+      const String claim1Document = r'''
+        mutation CreateClaim($input: CreateClaimInput!) {
+          createClaim(input: $input) {
             id
             quoteId
             claimNumber
@@ -132,9 +132,9 @@ class SampleDataService {
       final claim2Request = ModelMutations.create(claim2);
       // Construct a custom GraphQL document to avoid relationship nullability errors
       const String claim2OperationName = 'createClaim';
-      const String claim2Document = '''
-        mutation CreateClaim(\$input: CreateClaimInput!) {
-          $claim2OperationName(input: \$input) {
+      const String claim2Document = r'''
+        mutation CreateClaim($input: CreateClaimInput!) {
+          createClaim(input: $input) {
             id
             quoteId
             claimNumber
