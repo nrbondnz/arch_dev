@@ -89,7 +89,16 @@ class SampleDataService {
         submittedAt: TemporalDateTime(DateTime.now().subtract(const Duration(days: 30))),
         approvedAt: TemporalDateTime(DateTime.now().subtract(const Duration(days: 25))),
       );
-      await Amplify.API.mutate(request: ModelMutations.create(claim1)).response;
+      
+      final claim1Request = ModelMutations.create(claim1);
+      final claim1CustomRequest = GraphQLRequest<Claim>(
+        document: claim1Request.document,
+        variables: claim1Request.variables,
+        modelType: Claim.classType,
+        decodePath: claim1Request.decodePath,
+        selectionSet: 'id quoteId claimNumber status claimAmount retention netClaim submittedAt approvedAt createdAt updatedAt',
+      );
+      await Amplify.API.mutate(request: claim1CustomRequest).response;
 
       final claim2 = Claim(
         quoteId: quote3.id,
@@ -100,7 +109,16 @@ class SampleDataService {
         netClaim: 19800,
         submittedAt: TemporalDateTime.now(),
       );
-      await Amplify.API.mutate(request: ModelMutations.create(claim2)).response;
+      
+      final claim2Request = ModelMutations.create(claim2);
+      final claim2CustomRequest = GraphQLRequest<Claim>(
+        document: claim2Request.document,
+        variables: claim2Request.variables,
+        modelType: Claim.classType,
+        decodePath: claim2Request.decodePath,
+        selectionSet: 'id quoteId claimNumber status claimAmount retention netClaim submittedAt approvedAt createdAt updatedAt',
+      );
+      await Amplify.API.mutate(request: claim2CustomRequest).response;
       safePrint('Created Claims for Job 3');
 
       // 4. Another Job: Enquiry stage

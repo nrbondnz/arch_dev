@@ -196,6 +196,8 @@ class _SubcontractorDashboardScreenState extends State<SubcontractorDashboardScr
         onDestinationSelected: (i) {
           if (i == 1) {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const JobListScreen())).then((_) => _loadDashboard());
+          } else if (i == 2) {
+            // Navigator.push(context, MaterialPageRoute(builder: (_) => const QuoteListScreen())).then((_) => _loadDashboard());
           }
         },
       ),

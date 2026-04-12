@@ -27,7 +27,34 @@ class QuoteService {
     );
 
     final request = ModelMutations.create(quote);
-    final response = await Amplify.API.mutate(request: request).response;
+    // Explicitly define a selection set that only includes the fields we need from the created Quote,
+    // avoiding the automatic inclusion of the 'job' field which causes nullability errors in AppSync.
+    final String selectionSet = '''
+      id
+      jobId
+      title
+      status
+      subtotal
+      gstRate
+      totalIncGst
+      exclusions
+      notes
+      validityDays
+      submittedAt
+      acceptedAt
+      createdAt
+      updatedAt
+    ''';
+    
+    final GraphQLRequest<Quote> customRequest = GraphQLRequest<Quote>(
+      document: request.document,
+      variables: request.variables,
+      modelType: Quote.classType,
+      decodePath: request.decodePath,
+      selectionSet: selectionSet,
+    );
+
+    final response = await Amplify.API.mutate(request: customRequest).response;
 
     if (response.errors.isNotEmpty) {
       throw Exception('Failed to create quote: ${response.errors}');
@@ -41,7 +68,34 @@ class QuoteService {
       Quote.classType,
       QuoteModelIdentifier(id: quoteId),
     );
-    final response = await Amplify.API.query(request: request).response;
+
+    // Custom selection set to avoid nested job nullability errors
+    const String selectionSet = '''
+      id
+      jobId
+      title
+      status
+      subtotal
+      gstRate
+      totalIncGst
+      exclusions
+      notes
+      validityDays
+      submittedAt
+      acceptedAt
+      createdAt
+      updatedAt
+    ''';
+
+    final GraphQLRequest<Quote> customRequest = GraphQLRequest<Quote>(
+      document: request.document,
+      variables: request.variables,
+      modelType: Quote.classType,
+      decodePath: request.decodePath,
+      selectionSet: selectionSet,
+    );
+
+    final response = await Amplify.API.query(request: customRequest).response;
 
     if (response.errors.isNotEmpty) {
       throw Exception('Failed to get quote: ${response.errors}');
@@ -55,7 +109,38 @@ class QuoteService {
       Quote.classType,
       where: Quote.JOBID.eq(jobId),
     );
-    final response = await Amplify.API.query(request: request).response;
+
+    // Custom selection set to avoid nested job nullability errors
+    const String selectionSet = '''
+      items {
+        id
+        jobId
+        title
+        status
+        subtotal
+        gstRate
+        totalIncGst
+        exclusions
+        notes
+        validityDays
+        submittedAt
+        acceptedAt
+        createdAt
+        updatedAt
+      }
+      nextToken
+    ''';
+
+    final GraphQLRequest<PaginatedResult<Quote>> customRequest =
+        GraphQLRequest<PaginatedResult<Quote>>(
+      document: request.document,
+      variables: request.variables,
+      modelType: const PaginatedModelType(Quote.classType),
+      decodePath: request.decodePath,
+      selectionSet: selectionSet,
+    );
+
+    final response = await Amplify.API.query(request: customRequest).response;
 
     if (response.errors.isNotEmpty) {
       throw Exception('Failed to list quotes: ${response.errors}');
@@ -69,7 +154,38 @@ class QuoteService {
       Quote.classType,
       where: Quote.STATUS.eq(status),
     );
-    final response = await Amplify.API.query(request: request).response;
+
+    // Custom selection set to avoid nested job nullability errors
+    const String selectionSet = '''
+      items {
+        id
+        jobId
+        title
+        status
+        subtotal
+        gstRate
+        totalIncGst
+        exclusions
+        notes
+        validityDays
+        submittedAt
+        acceptedAt
+        createdAt
+        updatedAt
+      }
+      nextToken
+    ''';
+
+    final GraphQLRequest<PaginatedResult<Quote>> customRequest =
+        GraphQLRequest<PaginatedResult<Quote>>(
+      document: request.document,
+      variables: request.variables,
+      modelType: const PaginatedModelType(Quote.classType),
+      decodePath: request.decodePath,
+      selectionSet: selectionSet,
+    );
+
+    final response = await Amplify.API.query(request: customRequest).response;
 
     if (response.errors.isNotEmpty) {
       throw Exception('Failed to list quotes by status: ${response.errors}');
@@ -84,7 +200,34 @@ class QuoteService {
     }
 
     final request = ModelMutations.update(quote);
-    final response = await Amplify.API.mutate(request: request).response;
+
+    // Custom selection set to avoid relationship nullability errors
+    const String selectionSet = '''
+      id
+      jobId
+      title
+      status
+      subtotal
+      gstRate
+      totalIncGst
+      exclusions
+      notes
+      validityDays
+      submittedAt
+      acceptedAt
+      createdAt
+      updatedAt
+    ''';
+
+    final GraphQLRequest<Quote> customRequest = GraphQLRequest<Quote>(
+      document: request.document,
+      variables: request.variables,
+      modelType: Quote.classType,
+      decodePath: request.decodePath,
+      selectionSet: selectionSet,
+    );
+
+    final response = await Amplify.API.mutate(request: customRequest).response;
 
     if (response.errors.isNotEmpty) {
       throw Exception('Failed to update quote: ${response.errors}');
@@ -113,7 +256,29 @@ class QuoteService {
     );
 
     final request = ModelMutations.create(item);
-    final response = await Amplify.API.mutate(request: request).response;
+    
+    // Custom selection set to avoid relationship nullability errors
+    final String selectionSet = '''
+      id
+      quoteId
+      description
+      unit
+      quantity
+      rate
+      total
+      createdAt
+      updatedAt
+    ''';
+
+    final GraphQLRequest<QuoteLineItem> customRequest = GraphQLRequest<QuoteLineItem>(
+      document: request.document,
+      variables: request.variables,
+      modelType: QuoteLineItem.classType,
+      decodePath: request.decodePath,
+      selectionSet: selectionSet,
+    );
+
+    final response = await Amplify.API.mutate(request: customRequest).response;
 
     if (response.errors.isNotEmpty) {
       throw Exception('Failed to add line item: ${response.errors}');

@@ -38,7 +38,29 @@ class JobService {
     );
 
     final request = ModelMutations.create(job);
-    final response = await Amplify.API.mutate(request: request).response;
+    
+    // Custom selection set to avoid relationship nullability errors
+    const String selectionSet = '''
+      id
+      jobName
+      client
+      location
+      description
+      status
+      contractValue
+      createdAt
+      updatedAt
+    ''';
+
+    final GraphQLRequest<Job> customRequest = GraphQLRequest<Job>(
+      document: request.document,
+      variables: request.variables,
+      modelType: Job.classType,
+      decodePath: request.decodePath,
+      selectionSet: selectionSet,
+    );
+
+    final response = await Amplify.API.mutate(request: customRequest).response;
 
     if (response.errors.isNotEmpty) {
       throw Exception('Failed to create job: ${response.errors}');
@@ -52,7 +74,32 @@ class JobService {
         ? ModelQueries.list(Job.classType, where: Job.STATUS.eq(status))
         : ModelQueries.list(Job.classType);
 
-    final response = await Amplify.API.query(request: request).response;
+    // Custom selection set to avoid relationship nullability errors
+    const String selectionSet = '''
+      items {
+        id
+        jobName
+        client
+        location
+        description
+        status
+        contractValue
+        createdAt
+        updatedAt
+      }
+      nextToken
+    ''';
+
+    final GraphQLRequest<PaginatedResult<Job>> customRequest =
+        GraphQLRequest<PaginatedResult<Job>>(
+      document: request.document,
+      variables: request.variables,
+      modelType: const PaginatedModelType(Job.classType),
+      decodePath: request.decodePath,
+      selectionSet: selectionSet,
+    );
+
+    final response = await Amplify.API.query(request: customRequest).response;
 
     if (response.errors.isNotEmpty) {
       throw Exception('Failed to list jobs: ${response.errors}');
@@ -66,7 +113,29 @@ class JobService {
       Job.classType,
       JobModelIdentifier(id: jobId),
     );
-    final response = await Amplify.API.query(request: request).response;
+
+    // Custom selection set to avoid relationship nullability errors
+    const String selectionSet = '''
+      id
+      jobName
+      client
+      location
+      description
+      status
+      contractValue
+      createdAt
+      updatedAt
+    ''';
+
+    final GraphQLRequest<Job> customRequest = GraphQLRequest<Job>(
+      document: request.document,
+      variables: request.variables,
+      modelType: Job.classType,
+      decodePath: request.decodePath,
+      selectionSet: selectionSet,
+    );
+
+    final response = await Amplify.API.query(request: customRequest).response;
 
     if (response.errors.isNotEmpty) {
       throw Exception('Failed to get job: ${response.errors}');
@@ -110,7 +179,29 @@ class JobService {
     }
 
     final request = ModelMutations.update(updated);
-    final response = await Amplify.API.mutate(request: request).response;
+
+    // Custom selection set to avoid relationship nullability errors
+    const String selectionSet = '''
+      id
+      jobName
+      client
+      location
+      description
+      status
+      contractValue
+      createdAt
+      updatedAt
+    ''';
+
+    final GraphQLRequest<Job> customRequest = GraphQLRequest<Job>(
+      document: request.document,
+      variables: request.variables,
+      modelType: Job.classType,
+      decodePath: request.decodePath,
+      selectionSet: selectionSet,
+    );
+
+    final response = await Amplify.API.mutate(request: customRequest).response;
 
     if (response.errors.isNotEmpty) {
       throw Exception('Failed to update job status: ${response.errors}');
