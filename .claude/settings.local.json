@@ -8,7 +8,9 @@
       "Bash(flutter analyze:*)",
       "Bash(flutter.bat analyze:*)",
       "Bash(cmd /c \"flutter analyze lib/ 2>&1\")",
-      "Bash(powershell -Command \"cd 'C:\\\\dev\\\\flutter_projs\\\\arch_dev'; flutter analyze lib/ 2>&1\")"
+      "Bash(powershell -Command \"cd 'C:\\\\dev\\\\flutter_projs\\\\arch_dev'; flutter analyze lib/ 2>&1\")",
+      "Read(//c/dev/flutter_projs/arch_dev/**)",
+      "Bash(npm install:*)"
     ]
   }
 }
