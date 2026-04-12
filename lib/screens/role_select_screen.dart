@@ -1,16 +1,63 @@
 import 'package:amplify_authenticator/amplify_authenticator.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 
+import '../services/auth_service.dart';
 import 'subcontractor/dashboard_screen.dart';
 import 'contractor/dashboard_screen.dart';
 
-/// After sign-in, user picks their role. In production this would come from
-/// Cognito group membership / user attributes.
-class RoleSelectScreen extends StatelessWidget {
+/// After sign-in, checks for a Cognito group assignment and routes automatically.
+/// If no group is assigned (common during dev), shows the role picker.
+class RoleSelectScreen extends StatefulWidget {
   const RoleSelectScreen({super.key});
 
   @override
+  State<RoleSelectScreen> createState() => _RoleSelectScreenState();
+}
+
+class _RoleSelectScreenState extends State<RoleSelectScreen> {
+  bool _checking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _autoRoute();
+  }
+
+  Future<void> _autoRoute() async {
+    try {
+      final group = await AuthService.getCurrentUserGroup();
+      if (!mounted) return;
+
+      Widget? destination;
+      if (group == 'sub-contractor') {
+        destination = const SubcontractorDashboardScreen();
+      } else if (group == 'main-contractor') {
+        destination = const ContractorDashboardScreen();
+      } else if (group == 'qs') {
+        destination = const ContractorDashboardScreen(isQS: true);
+      }
+
+      if (destination != null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => destination!),
+        );
+        return;
+      }
+    } on Exception catch (e) {
+      safePrint('Could not auto-route by group: $e');
+    }
+
+    // No group found — show manual picker
+    if (mounted) setState(() => _checking = false);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_checking) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('ARCH'),

@@ -1,47 +1,46 @@
 import 'package:flutter/material.dart';
 
-enum JobStatus { draft, submitted, accepted, rejected, pending, approved, declined, paid }
+import '../models/ModelProvider.dart';
+import '../utils/status_helpers.dart';
 
+/// A coloured badge that displays an entity's status.
+///
+/// Use the named constructors for type-safe usage:
+///   StatusBadge.job(JobStatus.Enquiry)
+///   StatusBadge.quote(QuoteStatus.Draft)
+///
+/// Or use the default constructor with raw label/colour for
+/// entities not yet backed by Amplify models (variations, claims).
 class StatusBadge extends StatelessWidget {
-  final JobStatus status;
+  final String label;
+  final Color color;
 
-  const StatusBadge(this.status, {super.key});
+  const StatusBadge({super.key, required this.label, required this.color});
+
+  /// Badge for a [JobStatus] value.
+  StatusBadge.job(JobStatus status, {super.key})
+      : label = jobStatusLabel(status),
+        color = jobStatusColor(status);
+
+  /// Badge for a [QuoteStatus] value.
+  StatusBadge.quote(QuoteStatus status, {super.key})
+      : label = quoteStatusLabel(status),
+        color = quoteStatusColor(status);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _color.withOpacity(0.15),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _color.withOpacity(0.4)),
+        border: Border.all(color: color.withOpacity(0.4)),
       ),
       child: Text(
-        _label,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _color),
+        label,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
       ),
     );
   }
-
-  String get _label => switch (status) {
-        JobStatus.draft => 'Draft',
-        JobStatus.submitted => 'Submitted',
-        JobStatus.accepted => 'Accepted',
-        JobStatus.rejected => 'Rejected',
-        JobStatus.pending => 'Pending',
-        JobStatus.approved => 'Approved',
-        JobStatus.declined => 'Declined',
-        JobStatus.paid => 'Paid',
-      };
-
-  Color get _color => switch (status) {
-        JobStatus.draft => Colors.grey,
-        JobStatus.submitted => Colors.blue,
-        JobStatus.accepted => Colors.green,
-        JobStatus.rejected => Colors.red,
-        JobStatus.pending => Colors.orange,
-        JobStatus.approved => Colors.green,
-        JobStatus.declined => Colors.red,
-        JobStatus.paid => Colors.teal,
-      };
 }
+
