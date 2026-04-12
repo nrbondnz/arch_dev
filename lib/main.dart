@@ -68,23 +68,71 @@ class _StartPage extends StatefulWidget {
   State<_StartPage> createState() => _StartPageState();
 }
 
+enum _AuthView { landing, signIn, signUp }
+
 class _StartPageState extends State<_StartPage> {
-  bool _showLoginForm = false;
+  _AuthView _view = _AuthView.landing;
 
   @override
   Widget build(BuildContext context) {
-    if (_showLoginForm) {
+    if (_view == _AuthView.signIn) {
       return Scaffold(
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => setState(() => _showLoginForm = false),
+            onPressed: () => setState(() => _view = _AuthView.landing),
           ),
           title: const Text('Sign In'),
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: SignInForm(),
+          child: Column(
+            children: [
+              SignInForm(),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Don't have an account? "),
+                  TextButton(
+                    onPressed: () => setState(() => _view = _AuthView.signUp),
+                    child: const Text('Create account'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_view == _AuthView.signUp) {
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => setState(() => _view = _AuthView.landing),
+          ),
+          title: const Text('Create Account'),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              SignUpForm(),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Already have an account? '),
+                  TextButton(
+                    onPressed: () => setState(() => _view = _AuthView.signIn),
+                    child: const Text('Sign in'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -119,7 +167,7 @@ class _StartPageState extends State<_StartPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => setState(() => _showLoginForm = true),
+                    onPressed: () => setState(() => _view = _AuthView.signIn),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1A56DB),
                       foregroundColor: Colors.white,
@@ -127,6 +175,19 @@ class _StartPageState extends State<_StartPage> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: const Text('Sign In', style: TextStyle(fontSize: 16)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => setState(() => _view = _AuthView.signUp),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: const BorderSide(color: Color(0xFF1A56DB)),
+                    ),
+                    child: const Text('Create Account', style: TextStyle(fontSize: 16, color: Color(0xFF1A56DB))),
                   ),
                 ),
               ],
