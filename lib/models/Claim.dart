@@ -295,7 +295,6 @@ class _ClaimModelType extends amplify_core.ModelType<Claim> {
  * This is an auto generated class representing the model identifier
  * of [Claim] in your schema.
  */
-@amplify_core.immutable
 class ClaimModelIdentifier implements amplify_core.ModelIdentifier<Claim> {
   final String id;
 
