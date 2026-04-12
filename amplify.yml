@@ -10,13 +10,23 @@ backend:
       - .npm/**/*
 frontend:
   phases:
+    preBuild:
+      commands:
+        - git clone https://github.com/flutter/flutter.git -b stable --depth 1 $HOME/flutter
+        - export PATH="$PATH:$HOME/flutter/bin"
+        - flutter precache --web
+        - flutter --version
+        - flutter pub get
     build:
       commands:
-        - echo "No web frontend – Flutter app built and distributed separately"
+        - export PATH="$PATH:$HOME/flutter/bin"
+        - flutter build web --release
   artifacts:
-    baseDirectory: /
+    baseDirectory: build/web
     files:
       - '**/*'
   cache:
     paths:
-      - .npm/**/*
+      - $HOME/flutter/**/*
+      - .dart_tool/**/*
+      - .pub-cache/**/*
