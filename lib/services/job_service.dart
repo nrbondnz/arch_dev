@@ -37,27 +37,29 @@ class JobService {
       contractValue: contractValue,
     );
 
-    final request = ModelMutations.create(job);
-    
-    // Custom selection set to avoid relationship nullability errors
-    const String selectionSet = '''
-      id
-      jobName
-      client
-      location
-      description
-      status
-      contractValue
-      createdAt
-      updatedAt
+    // Construct a custom GraphQL document to avoid relationship nullability errors
+    const String operationName = 'createJob';
+    const String document = '''
+      mutation CreateJob(\$input: CreateJobInput!) {
+        $operationName(input: \$input) {
+          id
+          jobName
+          client
+          location
+          description
+          status
+          contractValue
+          createdAt
+          updatedAt
+        }
+      }
     ''';
 
     final GraphQLRequest<Job> customRequest = GraphQLRequest<Job>(
-      document: request.document,
+      document: document,
       variables: request.variables,
       modelType: Job.classType,
-      decodePath: request.decodePath,
-      selectionSet: selectionSet,
+      decodePath: operationName,
     );
 
     final response = await Amplify.API.mutate(request: customRequest).response;
@@ -70,33 +72,33 @@ class JobService {
 
   /// Lists all jobs, optionally filtered by [status].
   static Future<List<Job>> listJobs({JobStatus? status}) async {
-    final request = status != null
-        ? ModelQueries.list(Job.classType, where: Job.STATUS.eq(status))
-        : ModelQueries.list(Job.classType);
-
-    // Custom selection set to avoid relationship nullability errors
-    const String selectionSet = '''
-      items {
-        id
-        jobName
-        client
-        location
-        description
-        status
-        contractValue
-        createdAt
-        updatedAt
+    // Construct a custom GraphQL document to avoid relationship nullability errors
+    const String operationName = 'listJobs';
+    const String document = '''
+      query ListJobs(\$filter: ModelJobFilterInput, \$limit: Int, \$nextToken: String) {
+        $operationName(filter: \$filter, limit: \$limit, nextToken: \$nextToken) {
+          items {
+            id
+            jobName
+            client
+            location
+            description
+            status
+            contractValue
+            createdAt
+            updatedAt
+          }
+          nextToken
+        }
       }
-      nextToken
     ''';
 
     final GraphQLRequest<PaginatedResult<Job>> customRequest =
         GraphQLRequest<PaginatedResult<Job>>(
-      document: request.document,
+      document: document,
       variables: request.variables,
       modelType: const PaginatedModelType(Job.classType),
-      decodePath: request.decodePath,
-      selectionSet: selectionSet,
+      decodePath: operationName,
     );
 
     final response = await Amplify.API.query(request: customRequest).response;
@@ -109,30 +111,29 @@ class JobService {
 
   /// Fetches a single job by ID.
   static Future<Job?> getJob(String jobId) async {
-    final request = ModelQueries.get(
-      Job.classType,
-      JobModelIdentifier(id: jobId),
-    );
-
-    // Custom selection set to avoid relationship nullability errors
-    const String selectionSet = '''
-      id
-      jobName
-      client
-      location
-      description
-      status
-      contractValue
-      createdAt
-      updatedAt
+    // Construct a custom GraphQL document to avoid relationship nullability errors
+    const String operationName = 'getJob';
+    const String document = '''
+      query GetJob(\$id: ID!) {
+        $operationName(id: \$id) {
+          id
+          jobName
+          client
+          location
+          description
+          status
+          contractValue
+          createdAt
+          updatedAt
+        }
+      }
     ''';
 
     final GraphQLRequest<Job> customRequest = GraphQLRequest<Job>(
-      document: request.document,
+      document: document,
       variables: request.variables,
       modelType: Job.classType,
-      decodePath: request.decodePath,
-      selectionSet: selectionSet,
+      decodePath: operationName,
     );
 
     final response = await Amplify.API.query(request: customRequest).response;
@@ -178,27 +179,29 @@ class JobService {
       updated = updated.copyWith(contractValue: contractValue);
     }
 
-    final request = ModelMutations.update(updated);
-
-    // Custom selection set to avoid relationship nullability errors
-    const String selectionSet = '''
-      id
-      jobName
-      client
-      location
-      description
-      status
-      contractValue
-      createdAt
-      updatedAt
+    // Construct a custom GraphQL document to avoid relationship nullability errors
+    const String operationName = 'updateJob';
+    const String document = '''
+      mutation UpdateJob(\$input: UpdateJobInput!, \$condition: ModelJobConditionInput) {
+        $operationName(input: \$input, condition: \$condition) {
+          id
+          jobName
+          client
+          location
+          description
+          status
+          contractValue
+          createdAt
+          updatedAt
+        }
+      }
     ''';
 
     final GraphQLRequest<Job> customRequest = GraphQLRequest<Job>(
-      document: request.document,
+      document: document,
       variables: request.variables,
       modelType: Job.classType,
-      decodePath: request.decodePath,
-      selectionSet: selectionSet,
+      decodePath: operationName,
     );
 
     final response = await Amplify.API.mutate(request: customRequest).response;

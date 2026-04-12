@@ -26,32 +26,34 @@ class QuoteService {
       validityDays: validityDays,
     );
 
-    final request = ModelMutations.create(quote);
-    // Explicitly define a selection set that only includes the fields we need from the created Quote,
-    // avoiding the automatic inclusion of the 'job' field which causes nullability errors in AppSync.
-    final String selectionSet = '''
-      id
-      jobId
-      title
-      status
-      subtotal
-      gstRate
-      totalIncGst
-      exclusions
-      notes
-      validityDays
-      submittedAt
-      acceptedAt
-      createdAt
-      updatedAt
+    // Construct a custom GraphQL document to avoid relationship nullability errors
+    const String operationName = 'createQuote';
+    const String document = '''
+      mutation CreateQuote(\$input: CreateQuoteInput!) {
+        $operationName(input: \$input) {
+          id
+          jobId
+          title
+          status
+          subtotal
+          gstRate
+          totalIncGst
+          exclusions
+          notes
+          validityDays
+          submittedAt
+          acceptedAt
+          createdAt
+          updatedAt
+        }
+      }
     ''';
     
     final GraphQLRequest<Quote> customRequest = GraphQLRequest<Quote>(
-      document: request.document,
+      document: document,
       variables: request.variables,
       modelType: Quote.classType,
-      decodePath: request.decodePath,
-      selectionSet: selectionSet,
+      decodePath: operationName,
     );
 
     final response = await Amplify.API.mutate(request: customRequest).response;
@@ -64,35 +66,34 @@ class QuoteService {
 
   /// Fetches a single quote by ID.
   static Future<Quote?> getQuote(String quoteId) async {
-    final request = ModelQueries.get(
-      Quote.classType,
-      QuoteModelIdentifier(id: quoteId),
-    );
-
-    // Custom selection set to avoid nested job nullability errors
-    const String selectionSet = '''
-      id
-      jobId
-      title
-      status
-      subtotal
-      gstRate
-      totalIncGst
-      exclusions
-      notes
-      validityDays
-      submittedAt
-      acceptedAt
-      createdAt
-      updatedAt
+    // Construct a custom GraphQL document to avoid relationship nullability errors
+    const String operationName = 'getQuote';
+    const String document = '''
+      query GetQuote(\$id: ID!) {
+        $operationName(id: \$id) {
+          id
+          jobId
+          title
+          status
+          subtotal
+          gstRate
+          totalIncGst
+          exclusions
+          notes
+          validityDays
+          submittedAt
+          acceptedAt
+          createdAt
+          updatedAt
+        }
+      }
     ''';
 
     final GraphQLRequest<Quote> customRequest = GraphQLRequest<Quote>(
-      document: request.document,
+      document: document,
       variables: request.variables,
       modelType: Quote.classType,
-      decodePath: request.decodePath,
-      selectionSet: selectionSet,
+      decodePath: operationName,
     );
 
     final response = await Amplify.API.query(request: customRequest).response;
@@ -105,39 +106,38 @@ class QuoteService {
 
   /// Lists all quotes for a specific job.
   static Future<List<Quote>> listQuotesForJob(String jobId) async {
-    final request = ModelQueries.list(
-      Quote.classType,
-      where: Quote.JOBID.eq(jobId),
-    );
-
-    // Custom selection set to avoid nested job nullability errors
-    const String selectionSet = '''
-      items {
-        id
-        jobId
-        title
-        status
-        subtotal
-        gstRate
-        totalIncGst
-        exclusions
-        notes
-        validityDays
-        submittedAt
-        acceptedAt
-        createdAt
-        updatedAt
+    // Construct a custom GraphQL document to avoid relationship nullability errors
+    const String operationName = 'listQuotes';
+    const String document = '''
+      query ListQuotes(\$filter: ModelQuoteFilterInput, \$limit: Int, \$nextToken: String) {
+        $operationName(filter: \$filter, limit: \$limit, nextToken: \$nextToken) {
+          items {
+            id
+            jobId
+            title
+            status
+            subtotal
+            gstRate
+            totalIncGst
+            exclusions
+            notes
+            validityDays
+            submittedAt
+            acceptedAt
+            createdAt
+            updatedAt
+          }
+          nextToken
+        }
       }
-      nextToken
     ''';
 
     final GraphQLRequest<PaginatedResult<Quote>> customRequest =
         GraphQLRequest<PaginatedResult<Quote>>(
-      document: request.document,
+      document: document,
       variables: request.variables,
       modelType: const PaginatedModelType(Quote.classType),
-      decodePath: request.decodePath,
-      selectionSet: selectionSet,
+      decodePath: operationName,
     );
 
     final response = await Amplify.API.query(request: customRequest).response;
@@ -150,39 +150,38 @@ class QuoteService {
 
   /// Lists all quotes with the given status (e.g. for MC dashboard).
   static Future<List<Quote>> listQuotesByStatus(QuoteStatus status) async {
-    final request = ModelQueries.list(
-      Quote.classType,
-      where: Quote.STATUS.eq(status),
-    );
-
-    // Custom selection set to avoid nested job nullability errors
-    const String selectionSet = '''
-      items {
-        id
-        jobId
-        title
-        status
-        subtotal
-        gstRate
-        totalIncGst
-        exclusions
-        notes
-        validityDays
-        submittedAt
-        acceptedAt
-        createdAt
-        updatedAt
+    // Construct a custom GraphQL document to avoid relationship nullability errors
+    const String operationName = 'listQuotes';
+    const String document = '''
+      query ListQuotes(\$filter: ModelQuoteFilterInput, \$limit: Int, \$nextToken: String) {
+        $operationName(filter: \$filter, limit: \$limit, nextToken: \$nextToken) {
+          items {
+            id
+            jobId
+            title
+            status
+            subtotal
+            gstRate
+            totalIncGst
+            exclusions
+            notes
+            validityDays
+            submittedAt
+            acceptedAt
+            createdAt
+            updatedAt
+          }
+          nextToken
+        }
       }
-      nextToken
     ''';
 
     final GraphQLRequest<PaginatedResult<Quote>> customRequest =
         GraphQLRequest<PaginatedResult<Quote>>(
-      document: request.document,
+      document: document,
       variables: request.variables,
       modelType: const PaginatedModelType(Quote.classType),
-      decodePath: request.decodePath,
-      selectionSet: selectionSet,
+      decodePath: operationName,
     );
 
     final response = await Amplify.API.query(request: customRequest).response;
@@ -199,32 +198,34 @@ class QuoteService {
       throw StateError('Only Draft quotes can be edited');
     }
 
-    final request = ModelMutations.update(quote);
-
-    // Custom selection set to avoid relationship nullability errors
-    const String selectionSet = '''
-      id
-      jobId
-      title
-      status
-      subtotal
-      gstRate
-      totalIncGst
-      exclusions
-      notes
-      validityDays
-      submittedAt
-      acceptedAt
-      createdAt
-      updatedAt
+    // Construct a custom GraphQL document to avoid relationship nullability errors
+    const String operationName = 'updateQuote';
+    const String document = '''
+      mutation UpdateQuote(\$input: UpdateQuoteInput!, \$condition: ModelQuoteConditionInput) {
+        $operationName(input: \$input, condition: \$condition) {
+          id
+          jobId
+          title
+          status
+          subtotal
+          gstRate
+          totalIncGst
+          exclusions
+          notes
+          validityDays
+          submittedAt
+          acceptedAt
+          createdAt
+          updatedAt
+        }
+      }
     ''';
 
     final GraphQLRequest<Quote> customRequest = GraphQLRequest<Quote>(
-      document: request.document,
+      document: document,
       variables: request.variables,
       modelType: Quote.classType,
-      decodePath: request.decodePath,
-      selectionSet: selectionSet,
+      decodePath: operationName,
     );
 
     final response = await Amplify.API.mutate(request: customRequest).response;
@@ -255,27 +256,29 @@ class QuoteService {
       total: total,
     );
 
-    final request = ModelMutations.create(item);
-    
-    // Custom selection set to avoid relationship nullability errors
-    final String selectionSet = '''
-      id
-      quoteId
-      description
-      unit
-      quantity
-      rate
-      total
-      createdAt
-      updatedAt
+    // Construct a custom GraphQL document to avoid relationship nullability errors
+    const String operationName = 'createQuoteLineItem';
+    const String document = '''
+      mutation CreateQuoteLineItem(\$input: CreateQuoteLineItemInput!) {
+        $operationName(input: \$input) {
+          id
+          quoteId
+          description
+          unit
+          quantity
+          rate
+          total
+          createdAt
+          updatedAt
+        }
+      }
     ''';
 
     final GraphQLRequest<QuoteLineItem> customRequest = GraphQLRequest<QuoteLineItem>(
-      document: request.document,
+      document: document,
       variables: request.variables,
       modelType: QuoteLineItem.classType,
-      decodePath: request.decodePath,
-      selectionSet: selectionSet,
+      decodePath: operationName,
     );
 
     final response = await Amplify.API.mutate(request: customRequest).response;

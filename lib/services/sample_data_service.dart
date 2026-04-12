@@ -91,12 +91,31 @@ class SampleDataService {
       );
       
       final claim1Request = ModelMutations.create(claim1);
+      // Construct a custom GraphQL document to avoid relationship nullability errors
+      const String claim1OperationName = 'createClaim';
+      const String claim1Document = '''
+        mutation CreateClaim(\$input: CreateClaimInput!) {
+          $claim1OperationName(input: \$input) {
+            id
+            quoteId
+            claimNumber
+            status
+            claimAmount
+            retention
+            netClaim
+            submittedAt
+            approvedAt
+            createdAt
+            updatedAt
+          }
+        }
+      ''';
+      
       final claim1CustomRequest = GraphQLRequest<Claim>(
-        document: claim1Request.document,
+        document: claim1Document,
         variables: claim1Request.variables,
         modelType: Claim.classType,
-        decodePath: claim1Request.decodePath,
-        selectionSet: 'id quoteId claimNumber status claimAmount retention netClaim submittedAt approvedAt createdAt updatedAt',
+        decodePath: claim1OperationName,
       );
       await Amplify.API.mutate(request: claim1CustomRequest).response;
 
@@ -111,12 +130,31 @@ class SampleDataService {
       );
       
       final claim2Request = ModelMutations.create(claim2);
+      // Construct a custom GraphQL document to avoid relationship nullability errors
+      const String claim2OperationName = 'createClaim';
+      const String claim2Document = '''
+        mutation CreateClaim(\$input: CreateClaimInput!) {
+          $claim2OperationName(input: \$input) {
+            id
+            quoteId
+            claimNumber
+            status
+            claimAmount
+            retention
+            netClaim
+            submittedAt
+            approvedAt
+            createdAt
+            updatedAt
+          }
+        }
+      ''';
+      
       final claim2CustomRequest = GraphQLRequest<Claim>(
-        document: claim2Request.document,
+        document: claim2Document,
         variables: claim2Request.variables,
         modelType: Claim.classType,
-        decodePath: claim2Request.decodePath,
-        selectionSet: 'id quoteId claimNumber status claimAmount retention netClaim submittedAt approvedAt createdAt updatedAt',
+        decodePath: claim2OperationName,
       );
       await Amplify.API.mutate(request: claim2CustomRequest).response;
       safePrint('Created Claims for Job 3');
