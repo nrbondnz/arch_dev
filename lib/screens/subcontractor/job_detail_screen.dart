@@ -1,14 +1,17 @@
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 
+import '../../models/ModelProvider.dart';
+import '../../services/quote_service.dart';
+import '../../utils/status_helpers.dart';
 import '../../widgets/status_badge.dart';
-import 'job_list_screen.dart';
 import 'quote_builder_screen.dart';
 import 'daily_log_screen.dart';
 import 'variation_form_screen.dart';
 import 'progress_claim_screen.dart';
 
 class JobDetailScreen extends StatefulWidget {
-  final JobSummary job;
+  final Job job;
   const JobDetailScreen({super.key, required this.job});
 
   @override
@@ -37,7 +40,7 @@ class _JobDetailScreenState extends State<JobDetailScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(job.id),
+        title: Text(job.jobName, overflow: TextOverflow.ellipsis),
         bottom: TabBar(
           controller: _tabs,
           isScrollable: true,
@@ -54,8 +57,8 @@ class _JobDetailScreenState extends State<JobDetailScreen>
         children: [
           _OverviewTab(job: job),
           _QuotesTab(job: job),
-          _VariationsTab(job: job),
-          _ClaimsTab(job: job),
+          _VariationsTab(),
+          _ClaimsTab(),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -84,7 +87,9 @@ class _JobDetailScreenState extends State<JobDetailScreen>
               title: const Text('New Quote'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const QuoteBuilderScreen()));
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => QuoteBuilderScreen(jobId: widget.job.id),
+                ));
               },
             ),
             ListTile(
@@ -122,11 +127,15 @@ class _JobDetailScreenState extends State<JobDetailScreen>
 // ── Overview tab ─────────────────────────────────────────────────────────────
 
 class _OverviewTab extends StatelessWidget {
-  final JobSummary job;
+  final Job job;
   const _OverviewTab({required this.job});
 
   @override
   Widget build(BuildContext context) {
+    final value = (job.contractValue ?? 0) > 0
+        ? '\$${job.contractValue!.toStringAsFixed(0)}'
+        : 'TBC';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -142,46 +151,29 @@ class _OverviewTab extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: Text(job.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-                      StatusBadge(job.status),
+                      Expanded(child: Text(job.jobName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                      StatusBadge.job(job.status),
                     ],
                   ),
                   const SizedBox(height: 8),
                   _DetailRow(label: 'Client', value: job.client),
-                  _DetailRow(label: 'Location', value: job.location),
-                  _DetailRow(label: 'Contract Value', value: job.contractValue),
+                  if (job.location != null)
+                    _DetailRow(label: 'Location', value: job.location!),
+                  _DetailRow(label: 'Contract Value', value: value),
+                  if (job.description != null && job.description!.isNotEmpty)
+                    _DetailRow(label: 'Description', value: job.description!),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
 
-          // Progress
-          const Text('Overall Progress', style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: 0.62,
-            minHeight: 10,
-            borderRadius: BorderRadius.circular(5),
-          ),
-          const SizedBox(height: 4),
-          Text(job.progressPct, style: const TextStyle(color: Colors.black54, fontSize: 12)),
-          const SizedBox(height: 20),
-
-          // Documents section
+          // Documents section (hardcoded for Phase 1)
           const Text('Documents', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           _DocumentTile(icon: Icons.picture_as_pdf, title: 'IFC Drawings – Rev 3', date: '14 Mar 2026'),
           _DocumentTile(icon: Icons.picture_as_pdf, title: 'Scope of Works', date: '01 Feb 2026'),
           _DocumentTile(icon: Icons.picture_as_pdf, title: 'Signed Subcontract', date: '15 Feb 2026'),
-
-          const SizedBox(height: 20),
-
-          // Issues / defects
-          const Text('Open Issues', style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          _IssueTile(title: 'Brick coursing misalignment – Grid F3', severity: 'Minor', raised: '08 Apr 2026'),
-          _IssueTile(title: 'Mortar colour variance – north elevation', severity: 'Observation', raised: '10 Apr 2026'),
         ],
       ),
     );
@@ -198,9 +190,10 @@ class _DetailRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(width: 110, child: Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13))),
-          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -225,62 +218,161 @@ class _DocumentTile extends StatelessWidget {
   }
 }
 
-class _IssueTile extends StatelessWidget {
-  final String title;
-  final String severity;
-  final String raised;
-  const _IssueTile({required this.title, required this.severity, required this.raised});
+// ── Quotes tab (LIVE DATA) ──────────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext context) {
-    final color = severity == 'Minor' ? Colors.orange : Colors.blue;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Icon(Icons.warning_amber_outlined, color: color),
-        title: Text(title, style: const TextStyle(fontSize: 13)),
-        subtitle: Text('Raised $raised', style: const TextStyle(fontSize: 11)),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-          child: Text(severity, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Quotes tab ────────────────────────────────────────────────────────────────
-
-class _QuotesTab extends StatelessWidget {
-  final JobSummary job;
+class _QuotesTab extends StatefulWidget {
+  final Job job;
   const _QuotesTab({required this.job});
 
   @override
+  State<_QuotesTab> createState() => _QuotesTabState();
+}
+
+class _QuotesTabState extends State<_QuotesTab> {
+  List<Quote> _quotes = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadQuotes();
+  }
+
+  Future<void> _loadQuotes() async {
+    setState(() => _loading = true);
+    try {
+      final quotes = await QuoteService.listQuotesForJob(widget.job.id);
+      if (mounted) setState(() { _quotes = quotes; _loading = false; });
+    } on Exception catch (e) {
+      safePrint('Error loading quotes: $e');
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: const [
-        _QuoteListItem(ref: 'Q-001', description: 'Stage 1 – Brickwork', value: '\$148,000', status: JobStatus.accepted, date: '20 Feb 2026'),
-        _QuoteListItem(ref: 'Q-002', description: 'Stage 2 – Blockwork', value: '\$62,000', status: JobStatus.submitted, date: '01 Apr 2026'),
-      ],
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_quotes.isEmpty) {
+      return const Center(child: Text('No quotes yet', style: TextStyle(color: Colors.black54)));
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadQuotes,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _quotes.length,
+        itemBuilder: (context, i) {
+          final q = _quotes[i];
+          return _QuoteListItem(quote: q);
+        },
+      ),
     );
   }
 }
 
 class _QuoteListItem extends StatelessWidget {
+  final Quote quote;
+  const _QuoteListItem({required this.quote});
+
+  String _dateLabel(String? isoDate) =>
+      isoDate?.toString().split('T').first ?? '';
+
+  @override
+  Widget build(BuildContext context) {
+    final subtotal = (quote.subtotal ?? 0) > 0
+        ? '\$${quote.subtotal!.toStringAsFixed(0)} ex. GST'
+        : '–';
+
+    // FR-15: timeline dates
+    final created = _dateLabel(quote.createdAt?.toString());
+    final submitted = _dateLabel(quote.submittedAt?.toString());
+    final accepted = _dateLabel(quote.acceptedAt?.toString());
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: Text(quote.title, style: const TextStyle(fontWeight: FontWeight.bold))),
+                StatusBadge.quote(quote.status),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(subtotal, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0E9F6E))),
+            const SizedBox(height: 6),
+            // FR-15: quote timeline
+            Wrap(
+              spacing: 16,
+              children: [
+                if (created.isNotEmpty)
+                  Text('Created $created', style: const TextStyle(color: Colors.black45, fontSize: 11)),
+                if (submitted.isNotEmpty)
+                  Text('Submitted $submitted', style: const TextStyle(color: Colors.blue, fontSize: 11)),
+                if (accepted.isNotEmpty)
+                  Text('Accepted $accepted', style: const TextStyle(color: Colors.green, fontSize: 11)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Variations tab (hardcoded for Phase 1) ──────────────────────────────────
+
+class _VariationsTab extends StatelessWidget {
+  const _VariationsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _HardcodedCard(ref: 'V-001', description: 'Additional lintels – window revisions', value: '\$4,200', status: 'Approved', statusColor: Colors.green),
+        _HardcodedCard(ref: 'V-002', description: 'Extra coursing – colonnade area', value: '\$7,800', status: 'Approved', statusColor: Colors.green),
+        _HardcodedCard(ref: 'V-003', description: 'Brick type change – east facade', value: '\$3,400', status: 'Pending', statusColor: Colors.orange),
+      ],
+    );
+  }
+}
+
+// ── Claims tab (hardcoded for Phase 1) ──────────────────────────────────────
+
+class _ClaimsTab extends StatelessWidget {
+  const _ClaimsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _HardcodedCard(ref: 'PC-001 – February 2026', description: 'Gross \$52,000 | Retention \$2,600 | Net \$49,400', value: '\$49,400', status: 'Paid', statusColor: Colors.teal),
+        _HardcodedCard(ref: 'PC-002 – March 2026', description: 'Gross \$40,000 | Retention \$2,000 | Net \$38,000', value: '\$38,000', status: 'Submitted', statusColor: Colors.blue),
+      ],
+    );
+  }
+}
+
+/// Generic card for hardcoded variation/claim items (until those modules are built).
+class _HardcodedCard extends StatelessWidget {
   final String ref;
   final String description;
   final String value;
-  final JobStatus status;
-  final String date;
+  final String status;
+  final Color statusColor;
 
-  const _QuoteListItem({
+  const _HardcodedCard({
     required this.ref,
     required this.description,
     required this.value,
     required this.status,
-    required this.date,
+    required this.statusColor,
   });
 
   @override
@@ -295,165 +387,16 @@ class _QuoteListItem extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(ref, style: const TextStyle(fontWeight: FontWeight.bold)),
-                const Spacer(),
-                StatusBadge(status),
+                Expanded(child: Text(ref, style: const TextStyle(fontWeight: FontWeight.bold))),
+                StatusBadge(label: status, color: statusColor),
               ],
             ),
             const SizedBox(height: 4),
-            Text(description),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Text(value, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0E9F6E))),
-                const Spacer(),
-                Text(date, style: const TextStyle(color: Colors.black45, fontSize: 12)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Variations tab ────────────────────────────────────────────────────────────
-
-class _VariationsTab extends StatelessWidget {
-  final JobSummary job;
-  const _VariationsTab({required this.job});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: const [
-        _VariationListItem(ref: 'V-001', description: 'Additional lintels – window revisions', value: '\$4,200', status: JobStatus.approved),
-        _VariationListItem(ref: 'V-002', description: 'Extra coursing – colonnade area', value: '\$7,800', status: JobStatus.approved),
-        _VariationListItem(ref: 'V-003', description: 'Brick type change – east facade', value: '\$3,400', status: JobStatus.pending),
-      ],
-    );
-  }
-}
-
-class _VariationListItem extends StatelessWidget {
-  final String ref;
-  final String description;
-  final String value;
-  final JobStatus status;
-
-  const _VariationListItem({
-    required this.ref,
-    required this.description,
-    required this.value,
-    required this.status,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        title: Text(ref, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
             Text(description, style: const TextStyle(fontSize: 13)),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(value, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0E9F6E))),
           ],
         ),
-        trailing: StatusBadge(status),
-        isThreeLine: true,
-      ),
-    );
-  }
-}
-
-// ── Claims tab ────────────────────────────────────────────────────────────────
-
-class _ClaimsTab extends StatelessWidget {
-  final JobSummary job;
-  const _ClaimsTab({required this.job});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: const [
-        _ClaimListItem(ref: 'PC-001', period: 'February 2026', gross: '\$52,000', retention: '\$2,600', net: '\$49,400', status: JobStatus.paid),
-        _ClaimListItem(ref: 'PC-002', period: 'March 2026', gross: '\$40,000', retention: '\$2,000', net: '\$38,000', status: JobStatus.submitted),
-      ],
-    );
-  }
-}
-
-class _ClaimListItem extends StatelessWidget {
-  final String ref;
-  final String period;
-  final String gross;
-  final String retention;
-  final String net;
-  final JobStatus status;
-
-  const _ClaimListItem({
-    required this.ref,
-    required this.period,
-    required this.gross,
-    required this.retention,
-    required this.net,
-    required this.status,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text('$ref – $period', style: const TextStyle(fontWeight: FontWeight.bold)),
-                const Spacer(),
-                StatusBadge(status),
-              ],
-            ),
-            const Divider(height: 16),
-            Row(
-              children: [
-                _ClaimFigure(label: 'Gross', value: gross),
-                _ClaimFigure(label: 'Retention', value: '($retention)', color: Colors.red),
-                _ClaimFigure(label: 'Net Claim', value: net, color: const Color(0xFF0E9F6E)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ClaimFigure extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-
-  const _ClaimFigure({required this.label, required this.value, this.color = Colors.black87});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.black45)),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w600, color: color)),
-        ],
       ),
     );
   }

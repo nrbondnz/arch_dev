@@ -1,6 +1,11 @@
 import 'package:amplify_authenticator/amplify_authenticator.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 
+import '../../models/ModelProvider.dart';
+import '../../services/auth_service.dart';
+import '../../services/job_service.dart';
+import '../../services/quote_service.dart';
 import '../../widgets/summary_tile.dart';
 import 'job_list_screen.dart';
 import 'quote_builder_screen.dart';
@@ -8,8 +13,45 @@ import 'daily_log_screen.dart';
 import 'variation_form_screen.dart';
 import 'progress_claim_screen.dart';
 
-class SubcontractorDashboardScreen extends StatelessWidget {
+class SubcontractorDashboardScreen extends StatefulWidget {
   const SubcontractorDashboardScreen({super.key});
+
+  @override
+  State<SubcontractorDashboardScreen> createState() => _SubcontractorDashboardScreenState();
+}
+
+class _SubcontractorDashboardScreenState extends State<SubcontractorDashboardScreen> {
+  String _userName = '';
+  int _jobCount = 0;
+  int _pendingQuotes = 0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    try {
+      final results = await Future.wait([
+        AuthService.getCurrentUserDisplayName(),
+        JobService.listJobs(),
+        QuoteService.listQuotesByStatus(QuoteStatus.Submitted),
+      ]);
+      if (mounted) {
+        setState(() {
+          _userName = results[0] as String;
+          _jobCount = (results[1] as List).length;
+          _pendingQuotes = (results[2] as List).length;
+          _loading = false;
+        });
+      }
+    } on Exception catch (e) {
+      safePrint('Error loading dashboard: $e');
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,117 +65,125 @@ class SubcontractorDashboardScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Greeting
-              const Text('Good morning, Alex', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              const Text('Here\'s your current workload', style: TextStyle(color: Colors.black54)),
-              const SizedBox(height: 24),
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadDashboard,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Greeting
+                      Text(
+                        'Good morning, $_userName',
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text("Here's your current workload", style: TextStyle(color: Colors.black54)),
+                      const SizedBox(height: 24),
 
-              // Summary tiles
-              GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  SummaryTile(
-                    label: 'Active Jobs',
-                    count: '4',
-                    icon: Icons.work_outline,
-                    color: const Color(0xFF1A56DB),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const JobListScreen())),
+                      // Summary tiles
+                      GridView.count(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          SummaryTile(
+                            label: 'Active Jobs',
+                            count: '$_jobCount',
+                            icon: Icons.work_outline,
+                            color: const Color(0xFF1A56DB),
+                            onTap: () async {
+                              await Navigator.push(context, MaterialPageRoute(builder: (_) => const JobListScreen()));
+                              _loadDashboard();
+                            },
+                          ),
+                          SummaryTile(
+                            label: 'Quotes Pending',
+                            count: '$_pendingQuotes',
+                            icon: Icons.description_outlined,
+                            color: Colors.orange,
+                            onTap: () {},
+                          ),
+                          SummaryTile(
+                            label: 'Variations Awaiting',
+                            count: '–',
+                            icon: Icons.edit_note,
+                            color: Colors.purple,
+                            onTap: () {},
+                          ),
+                          SummaryTile(
+                            label: 'Claims Outstanding',
+                            count: '–',
+                            icon: Icons.receipt_long_outlined,
+                            color: const Color(0xFF0E9F6E),
+                            onTap: () {},
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // Quick actions
+                      const Text('Quick Actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 12),
+                      _QuickActionRow(actions: [
+                        _QuickAction(
+                          icon: Icons.add_circle_outline,
+                          label: 'New Quote',
+                          color: const Color(0xFF1A56DB),
+                          onTap: () async {
+                            await Navigator.push(context, MaterialPageRoute(builder: (_) => const QuoteBuilderScreen()));
+                            _loadDashboard();
+                          },
+                        ),
+                        _QuickAction(
+                          icon: Icons.today,
+                          label: 'Log Progress',
+                          color: Colors.green,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyLogScreen())),
+                        ),
+                        _QuickAction(
+                          icon: Icons.edit,
+                          label: 'Variation',
+                          color: Colors.purple,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VariationFormScreen())),
+                        ),
+                        _QuickAction(
+                          icon: Icons.send,
+                          label: 'New Claim',
+                          color: Colors.teal,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProgressClaimScreen())),
+                        ),
+                      ]),
+
+                      const SizedBox(height: 28),
+
+                      // Recent activity
+                      const Text('Recent Activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'No recent activity',
+                            style: TextStyle(color: Colors.black38, fontSize: 13),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  SummaryTile(
-                    label: 'Quotes Pending',
-                    count: '2',
-                    icon: Icons.description_outlined,
-                    color: Colors.orange,
-                    onTap: () {},
-                  ),
-                  SummaryTile(
-                    label: 'Variations Awaiting',
-                    count: '3',
-                    icon: Icons.edit_note,
-                    color: Colors.purple,
-                    onTap: () {},
-                  ),
-                  SummaryTile(
-                    label: 'Claims Outstanding',
-                    count: '1',
-                    icon: Icons.receipt_long_outlined,
-                    color: const Color(0xFF0E9F6E),
-                    onTap: () {},
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 28),
-
-              // Quick actions
-              const Text('Quick Actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              _QuickActionRow(actions: [
-                _QuickAction(
-                  icon: Icons.add_circle_outline,
-                  label: 'New Quote',
-                  color: const Color(0xFF1A56DB),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuoteBuilderScreen())),
                 ),
-                _QuickAction(
-                  icon: Icons.today,
-                  label: 'Log Progress',
-                  color: Colors.green,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyLogScreen())),
-                ),
-                _QuickAction(
-                  icon: Icons.edit,
-                  label: 'Variation',
-                  color: Colors.purple,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VariationFormScreen())),
-                ),
-                _QuickAction(
-                  icon: Icons.send,
-                  label: 'New Claim',
-                  color: Colors.teal,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProgressClaimScreen())),
-                ),
-              ]),
-
-              const SizedBox(height: 28),
-
-              // Recent activity
-              const Text('Recent Activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              _ActivityItem(
-                title: 'Variation #V-003 approved',
-                subtitle: 'Parnell Residential – additional brickwork',
-                time: '2h ago',
-                icon: Icons.check_circle,
-                iconColor: Colors.green,
               ),
-              _ActivityItem(
-                title: 'Progress claim submitted',
-                subtitle: 'Wynyard Quarter Commercial – March 2026',
-                time: 'Yesterday',
-                icon: Icons.send,
-                iconColor: Colors.blue,
-              ),
-              _ActivityItem(
-                title: 'Quote requested',
-                subtitle: 'East Tāmaki Warehouse – Stage 2 scope',
-                time: '2 days ago',
-                icon: Icons.description_outlined,
-                iconColor: Colors.orange,
-              ),
-            ],
-          ),
-        ),
       ),
       bottomNavigationBar: NavigationBar(
         destinations: const [
@@ -144,7 +194,9 @@ class SubcontractorDashboardScreen extends StatelessWidget {
         ],
         selectedIndex: 0,
         onDestinationSelected: (i) {
-          if (i == 1) Navigator.push(context, MaterialPageRoute(builder: (_) => const JobListScreen()));
+          if (i == 1) {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const JobListScreen())).then((_) => _loadDashboard());
+          }
         },
       ),
     );
@@ -157,10 +209,7 @@ class _QuickActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: actions,
-    );
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: actions);
   }
 }
 
@@ -196,43 +245,3 @@ class _QuickAction extends StatelessWidget {
   }
 }
 
-class _ActivityItem extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String time;
-  final IconData icon;
-  final Color iconColor;
-
-  const _ActivityItem({
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    required this.icon,
-    required this.iconColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: iconColor, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(color: Colors.black54, fontSize: 13)),
-              ],
-            ),
-          ),
-          Text(time, style: const TextStyle(color: Colors.black38, fontSize: 12)),
-        ],
-      ),
-    );
-  }
-}
