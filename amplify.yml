@@ -16,6 +16,8 @@ frontend:
         - export PATH="$PATH:$HOME/flutter/bin"
         - flutter precache --web
         - flutter --version
+        # Regenerate amplify_outputs.dart from the deployed backend
+        - npx ampx generate outputs --branch $AWS_BRANCH --app-id $AWS_APP_ID --format dart --out-dir lib
         - flutter pub get
     build:
       commands:
