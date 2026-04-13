@@ -66,7 +66,7 @@ export type TaskStatus = 'Pending' | 'InProgress' | 'Completed';
 
 // ── Manager arg types ─────────────────────────────────────────────────────────
 
-export type JobApiFunction = 'createJob' | 'updateJob' | 'getJob' | 'listJobs';
+export type JobApiFunction = 'createJob' | 'updateJob' | 'getJob' | 'listJobs' | 'deleteJob';
 
 export interface JobManagerArgs {
   apiFunction: JobApiFunction;

@@ -357,20 +357,31 @@ class BackendSeeder {
 
   // ── Cleanup ──────────────────────────────────────────────────────────────────
 
-  /// Deletes all jobs and their children so seed() is idempotent.
+  /// Deletes all jobs and their children via the manager Lambda so seed() is idempotent.
+  /// Uses callJobManagerAPI (Lambda-level auth) — direct model queries would require
+  /// the user to be in the admin-manager Cognito group.
   Future<void> _clearAll() async {
     onLog('── Clearing existing data ─────────────────────');
 
-    const listAllJobs = r'query { listJobs { items { id } } }';
-    final jobsResp = await Amplify.API
-        .query(request: GraphQLRequest<String>(document: listAllJobs, variables: {}))
-        .response;
-    _checkErrors(jobsResp.errors, 'listJobs');
+    // listJobs returns a List, not a Map — decode manually.
+    final request = GraphQLRequest<String>(
+      document: _jobQuery,
+      variables: {'apiFunction': 'listJobs'},
+    );
+    final response = await Amplify.API.query(request: request).response;
+    _checkErrors(response.errors, 'callJobManagerAPI/listJobs');
 
-    final jobsData =
-        jsonDecode(jobsResp.data ?? '{"listJobs":{"items":[]}}') as Map<String, dynamic>;
-    final jobs = ((jobsData['listJobs'] as Map?)?['items'] as List? ?? [])
-        .cast<Map<String, dynamic>>();
+    final raw = response.data;
+    if (raw == null) {
+      onLog('  (nothing to clear)');
+      return;
+    }
+    final outer = jsonDecode(raw) as Map<String, dynamic>;
+    final payload = jsonDecode(outer['callJobManagerAPI'] as String) as Map<String, dynamic>;
+    if (payload['success'] != true) {
+      throw Exception('listJobs failed: ${payload['message']}');
+    }
+    final jobs = (payload['data'] as List? ?? []).cast<Map<String, dynamic>>();
 
     if (jobs.isEmpty) {
       onLog('  (nothing to clear)');
@@ -378,66 +389,11 @@ class BackendSeeder {
     }
 
     onLog('  Found ${jobs.length} job(s) — deleting…');
+    // deleteJob in the Lambda does the full cascade (stages, WPs, variations, claims, quotes).
     for (final job in jobs) {
-      await _clearJobChildren(job['id'] as String);
-      await _deleteById('deleteJob', job['id'] as String);
+      await _callJob({'apiFunction': 'deleteJob', 'jobId': job['id'] as String});
     }
     onLog('  ✓ Clear complete');
-  }
-
-  Future<void> _clearJobChildren(String jobId) async {
-    // QuoteLineItems must be deleted before Quotes (DynamoDB has no cascade).
-    final quoteIds =
-        await _listIdsByField('listQuoteByJobId', 'jobId', jobId);
-    await Future.wait(
-      quoteIds.map((qId) => _deleteAllByField(
-          'listQuoteLineItemByQuoteId', 'quoteId', qId, 'deleteQuoteLineItem')),
-    );
-
-    await Future.wait([
-      ...quoteIds.map((qId) => _deleteById('deleteQuote', qId)),
-      _deleteAllByField('listStageByJobId', 'jobId', jobId, 'deleteStage'),
-      _deleteAllByField(
-          'listWorkPackageByJobId', 'jobId', jobId, 'deleteWorkPackage'),
-      _deleteAllByField(
-          'listVariationByJobId', 'jobId', jobId, 'deleteVariation'),
-      _deleteAllByField(
-          'listStageClaimByJobId', 'jobId', jobId, 'deleteStageClaim'),
-    ]);
-  }
-
-  Future<List<String>> _listIdsByField(
-      String queryName, String field, String value) async {
-    final doc =
-        'query(\$$field: ID!) { $queryName($field: \$$field) { items { id } } }';
-    final resp = await Amplify.API
-        .query(
-            request: GraphQLRequest<String>(
-                document: doc, variables: {field: value}))
-        .response;
-    _checkErrors(resp.errors, queryName);
-    final data =
-        jsonDecode(resp.data ?? '{}') as Map<String, dynamic>;
-    final items = ((data[queryName] as Map?)?['items'] as List? ?? []);
-    return items
-        .map((e) => (e as Map<String, dynamic>)['id'] as String)
-        .toList();
-  }
-
-  Future<void> _deleteAllByField(
-      String listQuery, String field, String value, String deleteMutation) async {
-    final ids = await _listIdsByField(listQuery, field, value);
-    await Future.wait(ids.map((id) => _deleteById(deleteMutation, id)));
-  }
-
-  Future<void> _deleteById(String mutation, String id) async {
-    final doc = 'mutation(\$id: ID!) { $mutation(input: {id: \$id}) { id } }';
-    final resp = await Amplify.API
-        .mutate(
-            request: GraphQLRequest<String>(
-                document: doc, variables: {'id': id}))
-        .response;
-    _checkErrors(resp.errors, mutation);
   }
 
   // ── Manager call helpers ─────────────────────────────────────────────────────

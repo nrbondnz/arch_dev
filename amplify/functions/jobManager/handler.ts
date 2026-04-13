@@ -52,6 +52,7 @@ export const handler = createBaseHandler(async (event: unknown) => {
     case 'updateJob':  return await updateJob(args);
     case 'getJob':     return await getJob(args);
     case 'listJobs':   return await listJobs(args);
+    case 'deleteJob':  return await deleteJobCascade(args);
     default:
       return fail('UNKNOWN_FUNCTION', `Unknown apiFunction: ${args.apiFunction}`);
   }
@@ -154,6 +155,68 @@ async function getJob(args: JobManagerArgs): Promise<string> {
   if (errors?.length) return fail('FETCH_FAILED', (errors[0] as { message?: string }).message ?? JSON.stringify(errors[0]));
   if (!data?.getJob) return fail('JOB_NOT_FOUND', `Job ${args.jobId} not found`);
   return ok(data.getJob);
+}
+
+async function deleteJobCascade(args: JobManagerArgs): Promise<string> {
+  if (!args.jobId) return fail('VALIDATION_ERROR', 'jobId is required');
+  const jobId = args.jobId;
+  console.log('[deleteJob] cascade delete | jobId:', jobId);
+
+  // Fetch all child IDs in parallel
+  const [stageIds, wpIds, varIds, claimIds, quoteIds] = await Promise.all([
+    listIdsByField('listStageByJobId',        'jobId',   jobId),
+    listIdsByField('listWorkPackageByJobId',   'jobId',   jobId),
+    listIdsByField('listVariationByJobId',     'jobId',   jobId),
+    listIdsByField('listStageClaimByJobId',    'jobId',   jobId),
+    listIdsByField('listQuoteByJobId',         'jobId',   jobId),
+  ]);
+
+  // Quote line items must go before quotes
+  const lineItemArrays = await Promise.all(
+    quoteIds.map(qId => listIdsByField('listQuoteLineItemByQuoteId', 'quoteId', qId)),
+  );
+  const lineItemIds = lineItemArrays.flat();
+
+  await Promise.all([
+    ...lineItemIds.map(id => deleteById('deleteQuoteLineItem', id)),
+    ...stageIds.map(id => deleteById('deleteStage', id)),
+    ...wpIds.map(id => deleteById('deleteWorkPackage', id)),
+    ...varIds.map(id => deleteById('deleteVariation', id)),
+    ...claimIds.map(id => deleteById('deleteStageClaim', id)),
+    ...quoteIds.map(id => deleteById('deleteQuote', id)),
+  ]);
+
+  console.log('[deleteJob] children removed | stages:', stageIds.length,
+    '| wps:', wpIds.length, '| vars:', varIds.length, '| claims:', claimIds.length,
+    '| quotes:', quoteIds.length, '| lineItems:', lineItemIds.length);
+
+  const { errors } = await client.graphql({
+    query: `mutation($id: ID!) { deleteJob(input: {id: $id}) { id } }`,
+    variables: { id: jobId },
+  }) as { data: unknown; errors?: unknown[] };
+
+  if (errors?.length) return fail('DELETE_FAILED', (errors[0] as { message?: string }).message ?? JSON.stringify(errors[0]));
+  console.log('[deleteJob] SUCCESS | id:', jobId);
+  return ok({ deleted: jobId });
+}
+
+async function listIdsByField(queryName: string, fieldName: string, fieldValue: string): Promise<string[]> {
+  const query = `query($${fieldName}: ID!) { ${queryName}(${fieldName}: $${fieldName}) { items { id } } }`;
+  const { data, errors } = await client.graphql({
+    query,
+    variables: { [fieldName]: fieldValue },
+  }) as { data: Record<string, { items: { id: string }[] } | null>; errors?: unknown[] };
+  if (errors?.length) console.warn(`[listIdsByField] ${queryName}:`, JSON.stringify(errors));
+  return data?.[queryName]?.items?.map(i => i.id) ?? [];
+}
+
+async function deleteById(mutationName: string, id: string): Promise<void> {
+  const mutation = `mutation($id: ID!) { ${mutationName}(input: {id: $id}) { id } }`;
+  const { errors } = await client.graphql({
+    query: mutation,
+    variables: { id },
+  }) as { data: unknown; errors?: unknown[] };
+  if (errors?.length) console.warn(`[deleteById] ${mutationName} ${id}:`, JSON.stringify(errors));
 }
 
 async function listJobs(args: JobManagerArgs): Promise<string> {
