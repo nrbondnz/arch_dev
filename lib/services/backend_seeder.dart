@@ -364,12 +364,14 @@ class BackendSeeder {
     onLog('── Clearing existing data ─────────────────────');
 
     // listJobs returns a List, not a Map — decode manually.
+    // Use listJobIds (id-only query) so stale records missing required fields
+    // (clientName, siteAddress) don't cause AppSync to return null items.
     final request = GraphQLRequest<String>(
       document: _jobQuery,
-      variables: {'apiFunction': 'listJobs'},
+      variables: {'apiFunction': 'listJobIds'},
     );
     final response = await Amplify.API.query(request: request).response;
-    _checkErrors(response.errors, 'callJobManagerAPI/listJobs');
+    _checkErrors(response.errors, 'callJobManagerAPI/listJobIds');
 
     final raw = response.data;
     if (raw == null) {
@@ -379,7 +381,7 @@ class BackendSeeder {
     final outer = jsonDecode(raw) as Map<String, dynamic>;
     final payload = jsonDecode(outer['callJobManagerAPI'] as String) as Map<String, dynamic>;
     if (payload['success'] != true) {
-      throw Exception('listJobs failed: ${payload['message']}');
+      throw Exception('listJobIds failed: ${payload['message']}');
     }
     final jobs = (payload['data'] as List? ?? []).cast<Map<String, dynamic>>();
 

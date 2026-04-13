@@ -41,6 +41,14 @@ const LIST_JOBS_BY_STATUS = `
   }
 `;
 
+// id-only scan — safe even when required fields (clientName, siteAddress) are null
+// in DynamoDB (e.g. corrupt records from before null-guard fix).
+const LIST_JOB_IDS = `
+  query ListJobIds {
+    listJobs { items { id } nextToken }
+  }
+`;
+
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 export const handler = createBaseHandler(async (event: unknown) => {
@@ -53,6 +61,7 @@ export const handler = createBaseHandler(async (event: unknown) => {
     case 'getJob':     return await getJob(args);
     case 'listJobs':   return await listJobs(args);
     case 'deleteJob':  return await deleteJobCascade(args);
+    case 'listJobIds': return await listJobIds();
     default:
       return fail('UNKNOWN_FUNCTION', `Unknown apiFunction: ${args.apiFunction}`);
   }
@@ -217,6 +226,14 @@ async function deleteById(mutationName: string, id: string): Promise<void> {
     variables: { id },
   }) as { data: unknown; errors?: unknown[] };
   if (errors?.length) console.warn(`[deleteById] ${mutationName} ${id}:`, JSON.stringify(errors));
+}
+
+async function listJobIds(): Promise<string> {
+  const { data, errors } = await client.graphql({
+    query: LIST_JOB_IDS,
+  }) as { data: { listJobs: { items: { id: string }[] } }; errors?: unknown[] };
+  if (errors?.length) return fail('FETCH_FAILED', (errors[0] as { message?: string }).message ?? JSON.stringify(errors[0]));
+  return ok(data?.listJobs?.items ?? []);
 }
 
 async function listJobs(args: JobManagerArgs): Promise<string> {
