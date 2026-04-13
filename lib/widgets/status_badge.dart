@@ -1,31 +1,61 @@
 import 'package:flutter/material.dart';
 
 import '../models/ModelProvider.dart';
+import '../models/domain.dart' as d;
 import '../utils/status_helpers.dart';
+import '../utils/domain_helpers.dart' as dh;
 
 /// A coloured badge that displays an entity's status.
 ///
-/// Use the named constructors for type-safe usage:
-///   StatusBadge.job(JobStatus.Enquiry)
-///   StatusBadge.quote(QuoteStatus.Draft)
-///
-/// Or use the default constructor with raw label/colour for
-/// entities not yet backed by Amplify models (variations, claims).
+/// Legacy constructors use Amplify-generated enums (job, quote).
+/// Domain constructors use the new pure-Dart domain enums.
 class StatusBadge extends StatelessWidget {
   final String label;
   final Color color;
 
   const StatusBadge({super.key, required this.label, required this.color});
 
-  /// Badge for a [JobStatus] value.
+  // ── Legacy Amplify constructors ───────────────────────────────────────────
+
+  /// Badge for an Amplify [JobStatus] value (legacy screens).
   StatusBadge.job(JobStatus status, {super.key})
       : label = jobStatusLabel(status),
         color = jobStatusColor(status);
 
-  /// Badge for a [QuoteStatus] value.
+  /// Badge for an Amplify [QuoteStatus] value (legacy screens).
   StatusBadge.quote(QuoteStatus status, {super.key})
       : label = quoteStatusLabel(status),
         color = quoteStatusColor(status);
+
+  // ── Domain constructors ───────────────────────────────────────────────────
+
+  StatusBadge.domainJob(d.JobStatus status, {super.key})
+      : label = dh.jobStatusLabel(status),
+        color = dh.jobStatusColor(status);
+
+  StatusBadge.stage(d.StageStatus status, {super.key})
+      : label = dh.stageStatusLabel(status),
+        color = dh.stageStatusColor(status);
+
+  StatusBadge.workPackage(d.WorkPackageStatus status, {super.key})
+      : label = dh.workPackageStatusLabel(status),
+        color = dh.workPackageStatusColor(status);
+
+  StatusBadge.domainQuote(d.QuoteStatus status, {super.key})
+      : label = dh.domainQuoteStatusLabel(status),
+        color = dh.domainQuoteStatusColor(status);
+
+  StatusBadge.variation(d.VariationStatus status, {super.key})
+      : label = dh.variationStatusLabel(status),
+        color = dh.variationStatusColor(status);
+
+  StatusBadge.claim(d.ClaimStatus status, {super.key})
+      : label = dh.claimStatusLabel(status),
+        color = dh.claimStatusColor(status);
+
+  StatusBadge.task(d.TaskStatus status, {super.key})
+      : label = dh.taskStatusLabel(status),
+        color = dh.taskStatusColor(status);
 
   @override
   Widget build(BuildContext context) {

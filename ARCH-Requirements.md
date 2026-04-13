@@ -1,289 +1,178 @@
-# Requirements Extraction: ARCH Developments Sub-Contractor Management System
-
-## Context
-
-This document extracts **system requirements** from the 20-page Obsidian Publish site for "wherewillwevisit.com" (ARCH Developments). The source material is heavily design-oriented — it includes AWS architecture, CDK code, DynamoDB schemas, API designs, and Step Functions workflows. Below, I separate what the system **must do** (requirements) from **how it's been designed to do it** (design/implementation decisions).
+# Requirements: ARCH Developments Sub-Contractor Management System
 
 ---
 
-## REQUIREMENTS (What the system must do)
+## 1. Purpose & Scope
 
-### 1. Purpose & Scope
-A system to manage the full lifecycle of subcontractor work on building projects: from enquiry and quoting through to variations, progress claims, completion, and retention release.
+A system owned and operated by the **sub-contracting business** to manage the full lifecycle of subcontract work on building projects: from enquiry and quoting through to variations, stage payments, practical completion, and retention release.
 
-### 2. Actors / Roles
-- **Sub-contractor** (brick/stone crew) — primary user, mobile-first
-- **Main contractor** (builder) — approvals, site instructions
-- **Quantity surveyor (QS)** — claim review, variation approval, final account
-- **System admin** — system management
+---
 
-### 3. Functional Requirements
+## 2. Actors / Roles
 
-#### 3.1 Job & Scope Management
-- FR-01: Create jobs from enquiries
-- FR-02: Attach drawings, specs, site details to jobs
-- FR-03: Track job status and contract value
-- FR-04: Job status lifecycle: Enquiry → Quoted → Contracted → Mobilised → InProgress (↔ VariationPending) → Completed → Closed
+| Actor | Type | Description |
+|---|---|---|
+| **Admin / Manager** | Internal system user | Business owner or office manager. Full system access. Manages jobs, contracts, billing, document sends, and variation approvals. |
+| **Site Manager** | Internal system user | On-site crew lead. Scoped to assigned work packages. Submits daily logs and completes system-generated tasks. |
+| **Client (Main Contractor)** | External party | Receives documents (quotes, variations, claims) by email or link. Does not have a system account. Responses are recorded by the Admin. |
+
+---
+
+## 3. Functional Requirements
+
+### 3.1 Job & Scope Management
+
+- FR-01: Create jobs from client enquiries, capturing client name, contact, email, site address, and contract type
+- FR-02: Attach drawings, specifications, and scope documents to jobs
+- FR-03: Track job status and total contract value (sum of stage values)
+- FR-04: Job status lifecycle: `Enquiry` → `Quoted` → `Contracted` → `Mobilised` → `InProgress` ↔ `VariationPending` → `Completed` → `Closed`
 - FR-05: Status transitions must follow the state machine (no skipping states)
 - FR-06: Contract value must be >= 0
-- FR-07: Retention rules immutable after job reaches "Contracted" status (only changeable via approved variation)
+- FR-07: Total contract value must equal the sum of all stage scheduled values
 
-#### 3.2 Quoting & Contract Formation
-- FR-08: Build quotes from line items (description, quantity, unit, rate)
-- FR-09: Track exclusions and assumptions (free text)
-- FR-10: Show running total during quote building
-- FR-11: Quote status flow: Draft → Submitted → Accepted | Rejected
-- FR-12: Only one accepted quote per job (invariant)
-- FR-13: Quote total must equal sum of line item amounts (invariant)
-- FR-14: Summary/review page before submission with totals, exclusions, notes
-- FR-15: Quote card displays status and timeline (created, submitted, accepted)
-- FR-16: Select existing job or create new job from enquiry when starting a quote
+### 3.2 Quoting
 
-#### 3.3 Execution Tracking (Daily Logs)
-- FR-17: Daily logs capturing: labour hours (per person or total), materials used (optional), progress notes (free text), photos
-- FR-18: Date defaults to today when creating a log
-- FR-19: Labour hours must be >= 0 (invariant)
-- FR-20: Log date must be within job active period (invariant)
-- FR-21: Photo upload capability
-- FR-22: Backend must aggregate progress from daily logs for use in claims
+- FR-08: Build quotes from line items (description, quantity, unit, rate); show running total
+- FR-09: Track exclusions and assumptions as free text
+- FR-10: Quotes must have a configurable validity date; expired quotes cannot be accepted
+- FR-11: Quote status flow: `Draft` → `Submitted` → `DocumentSent` → `Accepted` | `Rejected`
+- FR-12: Only one accepted quote per job
+- FR-13: Quote total must equal sum of line item amounts
+- FR-14: Generate a quote PDF document and send to client by email or shareable link
+- FR-15: Admin records client acceptance or rejection (response received outside system)
+- FR-16: Job advances to `Contracted` when quote acceptance is recorded
 
-#### 3.4 Variation Management
-- FR-23: Capture variations with: description, reason (dropdown + free text), price
-- FR-24: Attach evidence to variations (photos, site instruction PDF) — optional
-- FR-25: Variation price must be >= 0 (invariant)
-- FR-26: Variation approval workflow: Pending → Approved | Declined
-- FR-27: Only approved variations affect contract value (invariant)
-- FR-28: Cannot approve variation if job is Closed (invariant)
-- FR-29: On approval: price rolled into contract value, variation tagged for next claim
-- FR-30: UI shows "Waiting for approval" status while pending
+### 3.3 Contract Formation & Stages
 
-#### 3.5 Billing & Progress Claims
-- FR-31: Create progress claims per period (e.g. monthly)
-- FR-32: Auto-populate claims with measured progress (from daily logs) and approved variations not yet claimed
-- FR-33: Allow manual adjustment of quantities (with warning to user)
-- FR-34: Show retention held and net claim amount
-- FR-35: Claim status flow: Submitted → Approved | Rejected → Scheduled → Paid
-- FR-36: Approved amount must be >= 0 (invariant)
-- FR-37: Claim periods cannot overlap for the same job (invariant)
-- FR-38: Cannot submit claim if job is not InProgress or Completed (invariant)
-- FR-39: Generate PDF/document for submitted claims
-- FR-40: Retention calculation rules with tiered thresholds (e.g. 10% to a cap, then 5%, then 2.5%)
-- FR-41: Track payment schedules and paid status
+- FR-17: Define contract type per job: Lump Sum, Schedule of Rates, or Cost-Plus
+- FR-18: Capture payment terms per contract (e.g. "20th of following month, 20 working days")
+- FR-19: Define one or more **stages** per job at contract time; each stage has:
+  - Description
+  - Scheduled value (NZD ex. GST)
+  - Payment trigger type: `Milestone`, `Date`, `PercentComplete`, or `Manual`
+  - Trigger value (milestone name, specific date, or % threshold)
+  - Retention rate (per stage)
+- FR-20: Sum of stage scheduled values must equal total contract value
+- FR-21: Stage schedules are immutable after job reaches `InProgress` (only changeable via approved variation)
+- FR-22: Mobilisation checklist must be completed (RAMS, insurance, induction, materials, access) before job advances to `InProgress`
 
-#### 3.6 Completion & Retention
-- FR-42: Practical completion workflow (walk-through, defect fixing, sign-off)
-- FR-43: Defects liability period tracking
-- FR-44: Final account reconciliation
-- FR-45: Retention release workflow (partial at practical completion, final after defects period)
+### 3.4 Work Packages
 
-#### 3.7 Main Contractor / QS View
-- FR-46: View lists of incoming quotes, variations, and claims
-- FR-47: Approve/decline with comments (modal interaction)
-- FR-48: Read-only view of job progress and documents
-- FR-49: Notes/comments field when reviewing claims (e.g. "Looks good, approved for payment")
-- FR-50: Reject or Approve actions on claims
+- FR-23: Create one or more work packages per job (sequential or parallel)
+- FR-24: Each work package has a description, planned start date, planned end date, and resource list
+- FR-25: Assign one site manager per work package; site manager can hold multiple packages
+- FR-26: Admin can reassign a work package to a different site manager
+- FR-27: A work package enters `VariationPending` status when an approved variation creates an `UpdateWorkPlan` task; it returns to `Active` only when that task is completed
+- FR-28: A work package cannot be marked `Completed` while `UpdateWorkPlan` tasks are outstanding
 
-#### 3.8 Sub-contractor Dashboard
-- FR-51: Dashboard showing: Active jobs (status, site, next action), Quotes waiting on client, Variations pending approval, Claims submitted/awaiting payment
-- FR-52: Primary actions from dashboard: New quote, Log daily progress, Create variation, Submit claim
+### 3.5 Execution Tracking (Daily Logs)
 
-#### 3.9 Notifications & Events
-- FR-53: Notify main contractor when quote is submitted
-- FR-54: Notify sub-contractor on quote acceptance/rejection
-- FR-55: Notify approver when variation is requested
-- FR-56: Notify QS when claim is submitted for review
-- FR-57: Notify sub-contractor on claim approval/rejection
-- FR-58: Payment scheduled notifications
+- FR-29: Site managers submit daily logs per work package: labour hours (per person or total), materials used (optional), progress notes, scope quantities completed, photos, issues/defects
+- FR-30: Log date defaults to today; backdating allowed within grace period (within work package active dates)
+- FR-31: Labour hours per entry must be >= 0
+- FR-32: Photo upload capability via S3 pre-signed URLs
+- FR-33: Backend aggregates cumulative quantities completed per scope item for use in stage claims
+- FR-34: Percentage complete per scope item calculated from cumulative quantities vs. contract quantities
+- FR-35: Issues and defects can be logged against a daily log with description, severity (Minor / Major / Critical), and photos
 
-#### 3.10 Document Management
-- FR-59: Upload and store documents (plans, RAMS, contracts, photos)
-- FR-60: Associate documents with jobs
+### 3.6 Variation Management
 
-#### 3.11 Integration Points
-- FR-61: Accounting system integration (Xero, MYOB) — optional. Additional integration candidates noted in vendor discussions: Tradify, SiteConnect, Procore, generic ERP systems
-- FR-62: Email ingestion for RFIs and site instructions
-- FR-63: Cloud storage integration (SharePoint, S3, OneDrive)
+- FR-36: Admin logs variations with: description, reason, whether client-initiated, client contact name, cost impact, time impact in days
+- FR-37: Attach evidence to variations: photos, site instruction PDFs (optional)
+- FR-38: Variation cost impact must be >= 0
+- FR-39: Variation status flow: `Logged` → `PricedUp` → `DocumentSent` → `Approved` | `Declined`
+- FR-40: A variation document must be sent to the client before it can be marked `Approved`
+- FR-41: Admin records client approval or rejection (response received outside system)
+- FR-42: On approval: `job.totalContractValue += variation.price`; affected work package planned end date updated by `timeImpactDays`
+- FR-43: On approval: system creates an `UpdateWorkPlan` task for the assigned site manager
+- FR-44: Only approved variations affect contract value
+- FR-45: Cannot approve a variation if the job is `Closed`
+- FR-46: Capture time impact (days) as well as cost impact on variations
 
-#### 3.12 Contract & Compliance
-- FR-64: Track contract type per job (lump sum, schedule of rates, cost-plus)
-- FR-65: Capture and enforce payment terms per contract (e.g. 20th of month, 10-20 working days)
-- FR-66: Payment dispute handling — ability to respond to disputed payment schedules
-- FR-67: Quotes must have a configurable validity period; expired quotes cannot be accepted
-- FR-68: Job cannot progress past Quoted without an accepted quote (business rule)
-- FR-69: Mobilisation checklist generation and completion gate — RAMS, insurance, materials, scaffolding, and induction must be tracked and completed before work starts
-- FR-70: System must support variable/configurable workflows per job type (steps change per engagement)
-- FR-71: Claim submission deadlines/cut-off dates per contract
-- FR-72: Issue/defect logging during execution phase (not just at completion)
-- FR-73: Cross-entity search across jobs, sites, and documents
-- FR-74: System should detect scope changes that may trigger variations
-- FR-75: Track insurance certificates and compliance document status per job
-- FR-76: Site induction tracking per job
-- FR-77: Capture time impact (not just cost) on variations
-- FR-78: Attach supporting evidence (photos, measurements) to progress claims
-- FR-79: Track progress by percentage complete per scope item
-- FR-80: Retention calculation supports tiered thresholds (e.g. 10% to cap, then 5%, then 2.5%)
-- FR-81: Mark claims as paid (explicit action via API)
-- FR-82: Job transitions to InProgress when first daily log is created or explicit "Start Work" event occurs
+### 3.7 Stage Claims & Billing
 
-### 4. Non-Functional Requirements
-- NFR-01: **Scalability** — auto-scaling, handle variable load
-- NFR-02: **Availability** — no single point of failure
-- NFR-03: **Security** — authenticated users, role-based access, encrypted data at rest and in transit
-- NFR-04: **Auditability** — full audit trail of events and changes
-- NFR-05: **Extensibility** — event-driven architecture allowing new consumers
+- FR-47: System detects when a stage's trigger condition is met and notifies the Admin
+- FR-48: Admin creates a stage claim for a triggered stage; claim auto-populated from:
+  - Measured progress quantities (from daily logs for associated work packages)
+  - Approved variations not yet included in a prior claim
+- FR-49: Admin can manually adjust quantities in the claim (with a warning indicator)
+- FR-50: Financial summary shows: scheduled stage value, work completed value, variations included, gross claim value, retention held (per stage rate), and net claim total
+- FR-51: Claim total = gross claim value − retention held; must be >= 0
+- FR-52: Only one claim per stage
+- FR-53: Cannot submit a stage claim if the job is not `InProgress` or `Completed`
+- FR-54: Generate a stage claim PDF document and send to client by email or shareable link
+- FR-55: Admin records payment received (date, amount, notes)
+- FR-56: Approved variations included in a claim cannot be double-claimed in a future stage
+- FR-57: Support tiered retention (e.g. 10% per stage up to a cap, then 5%, then 2.5%) — configurable per stage
 
-### 5. Domain Model (Data Requirements)
+### 3.8 Practical Completion & Retention Release
 
-#### Entities & Key Attributes
-| Entity | Key Attributes |
-|---|---|
-| **Job** | jobId, clientId, siteAddress, status, contractValue, retentionRules |
-| **Quote** | quoteId, jobId, lineItems[], exclusions[], total, validityPeriod, status, submittedAt, acceptedAt |
-| **Variation** | variationId, jobId, description, reason, price, approvalStatus, requestedBy, approvedBy |
-| **ProgressClaim** | claimId, jobId, periodStart, periodEnd, measuredWork[], variationsIncluded[], retentionHeld, approvedAmount, status |
-| **DailyLog** | logId, jobId, date, labourHours, materialsUsed, progressNotes, photos[] |
+- FR-58: Site manager marks work package as `Completed`
+- FR-59: Admin records issuance of Practical Completion Certificate; job advances to `Completed`
+- FR-60: Defects and snags logged during or after execution can be tracked and resolved
+- FR-61: Partial retention release at practical completion (typically 50% of held retention)
+- FR-62: Defects liability period tracked per contract (configurable duration, e.g. 12 months)
+- FR-63: Admin records final completion and full retention release; job advances to `Closed`
+- FR-64: Final account reconciliation: total contracted vs. total claimed vs. total paid
 
-#### Value Objects
-- Measurement (m², lm, units)
-- Money (amount, currency)
-- DateRange
-- ScopeItem
-- SiteInstruction
+### 3.9 Admin Dashboard
 
-#### Domain Events
-- JobCreated, QuoteSubmitted, QuoteAccepted, QuoteRejected, ContractSigned
-- VariationRequested, VariationApproved, VariationDeclined
-- ProgressUpdated, ClaimSubmitted, ClaimPaid, PaymentScheduled
-- PracticalCompletionIssued, FinalAccountClosed
+- FR-65: Dashboard shows: active jobs (status, site, next action), stages with triggered payment conditions, variations pending document send, claims awaiting payment, outstanding site manager tasks
+- FR-66: Primary quick actions from dashboard: New Job, New Quote, Log Variation, Start Stage Claim
 
-#### Event-to-State Transition Mappings
-| Event | State Transition |
-|---|---|
-| QuoteSubmitted | Enquiry → Quoted |
-| QuoteAccepted | Quoted → Contracted |
-| ContractSigned | Contracted → Mobilised |
-| WorkStarted (or first DailyLog) | Mobilised → InProgress |
-| ProgressUpdated | InProgress → InProgress (self-transition) |
-| VariationRequested | InProgress → VariationPending |
-| VariationApproved | VariationPending → InProgress |
-| PracticalCompletionIssued | InProgress → Completed |
-| FinalAccountClosed | Completed → Closed |
+### 3.10 Site Manager Dashboard
 
-### 6. Business Process (8 stages)
+- FR-67: Dashboard shows: assigned work packages (status, site, dates), pending tasks, shortcut to add today's log
+- FR-68: Site manager only sees jobs and work packages they are assigned to
 
-1. **Enquiry & Pre-Contract**
-   - Inputs: project drawings (architectural + structural), scope of works, specifications (materials, mortar type, tolerances, seismic requirements), programme/timeline expectations, site conditions (access, scaffolding, storage), health & safety requirements, contract type (lump sum, schedule of rates, cost-plus)
-   - Activities: review drawings and scope, identify assumptions/exclusions/risks, submit RFIs if unclear, site visit (optional), prepare estimate or schedule of rates
-   - Outputs: quote/tender submission, clarifications & exclusions list, provisional sums (if needed), draft programme
+### 3.11 Task Management
 
-2. **Contract Formation**
-   - Inputs: accepted quote, main contractor's subcontract agreement, insurance requirements (public liability, contract works), payment terms (often 20th of month, 10-20 working days)
-   - Activities: review subcontract terms (retentions, liquidated damages, variations process), negotiate unfair clauses, provide insurance certificates, provide H&S documentation (Site Safe, RAMS)
-   - Outputs: signed subcontract agreement, approved RAMS, programme slot confirmed, site induction scheduled
+- FR-69: System creates tasks for site managers when variations are approved (`UpdateWorkPlan`)
+- FR-70: System creates tasks for mobilisation checklist completion
+- FR-71: System creates tasks for defect resolution during completion phase
+- FR-72: Site managers can mark tasks `InProgress` and `Completed`; provide completion notes
+- FR-73: Work package cannot exit `VariationPending` until all related `UpdateWorkPlan` tasks are complete
 
-3. **Mobilisation & Planning**
-   - Inputs: final IFC (Issued for Construction) drawings, site access instructions, material supply responsibilities (sub-contractor vs main contractor), scaffolding plan
-   - Activities: order materials (if sub-contractor supplies), confirm labour availability, prepare daily/weekly work plans, attend pre-start meeting
-   - Outputs: material delivery schedule, labour schedule, site induction completed, workface planning documents, mobilisation checklist completed
+### 3.12 Client Communications (Outbound)
 
-4. **Execution**
-   - Inputs: approved drawings, materials on site, site instructions from main contractor, daily coordination with other trades
-   - Activities: perform work (brick/stone laying), quality checks (plumb, level, mortar joints), recording progress (photos, daily logs), managing delays or access issues, identifying variations early, issue/defect logging
-   - Outputs: completed work sections, daily site reports, quality assurance records, variation notices (if scope changes)
+- FR-74: Quote documents can be sent to client by email (SES) or shareable link
+- FR-75: Variation documents can be sent to client by email or shareable link
+- FR-76: Stage claim documents can be sent to client by email or shareable link
+- FR-77: Admin records client responses (quote acceptance/rejection, variation approval/decline, payment) — responses occur outside the system
+- FR-78: No inbound client portal or client account provisioning in scope
 
-5. **Variations**
-   - Inputs: change in design, site instruction (SI), RFI response altering scope, unexpected conditions (e.g. foundation misalignment)
-   - Activities: assess cost + time impact, submit Variation Request (VR) or Variation Quotation (VQ), negotiate with main contractor, get written approval before proceeding (ideal)
-   - Outputs: approved variation, updated programme, updated cost schedule, variation added to next invoice
+### 3.13 Document Management
 
-6. **Progress Claims**
-   - Inputs: contract payment schedule, measured progress (m² laid, % complete), approved variations, retention rules (typically 10% → 5% → 2.5%)
-   - Activities: prepare monthly progress claim, attach supporting evidence (photos, measurements), submit before cut-off date (often 20th), respond to Payment Schedule (if disputed)
-   - Outputs: progress claim, payment schedule from main contractor, invoice issued, payment received
+- FR-79: Upload and store documents per job: drawings, RAMS, insurance certificates, signed contracts, photos
+- FR-80: Documents attached to jobs are accessible to Admin; site managers can view documents for their assigned jobs
 
-7. **Practical Completion**
-   - Inputs: completed scope, QA documentation, site inspection
-   - Activities: walk-through with main contractor, fix defects/snags, provide warranties (if required), provide as-built documentation (if relevant)
-   - Outputs: Practical Completion Certificate, release of part of retention, final claim for remaining work
+### 3.14 Integration Points
 
-8. **Final Account & Close-Out**
-   - Inputs: defects liability period (often 12 months, configurable per job), final inspection
-   - Activities: attend to any defects, submit final invoice, reconcile accounts (materials, labour, variations)
-   - Outputs: Final Completion Certificate, release of final retention, project financial close-out report
-
-### 7. Interaction Between Parties (from Swimlane)
-| Stage | Sub-contractor | Main Contractor | QS | System |
-|---|---|---|---|---|
-| Enquiry | — | Send drawings + scope | — | Create Job |
-| Quoting | Review, measure, price, submit quote | — | — | Store quote, update status |
-| Contract | Provide insurance + RAMS | Accept quote, send subcontract | Review contract value | Update status |
-| Mobilisation | Order materials, schedule labour | Confirm scaffolding + access | — | Track readiness |
-| Execution | Perform work, daily logs | Issue site instructions | — | Detect scope changes |
-| Variations | Submit variation price | Issue SI | Approve/decline | Update contract value |
-| Billing | Submit progress claim | Payment schedule | Validate quantities | Generate invoice |
-| Completion | Fix defects | Issue PC certificate | — | Update status |
-| Final Account | — | Release retentions | Reconcile final amounts | Close job |
+- FR-81: Accounting system integration (Xero, MYOB) — optional
+- FR-82: Cloud storage integration (SharePoint, S3, OneDrive) — optional
+- FR-83: No email ingestion in scope for this phase
 
 ---
 
-## DESIGN DECISIONS (How it's been designed — NOT requirements)
+## 4. Non-Functional Requirements
 
-The following are implementation/architecture choices from the document that should be evaluated separately from requirements:
-
-### Technology Stack (from aws-system-view, cdk-shape)
-- AWS serverless architecture (Lambda, API Gateway, DynamoDB, S3, EventBridge, Step Functions, SQS, SNS, Cognito)
-- S3 + CloudFront for static web app hosting
-- React/Vue frontend (not specified which)
-- CDK for infrastructure as code
-- DynamoDB single-table design with GSIs
-
-### API Design (from api-design)
-- REST API with versioning (base path /v1)
-- Specific endpoint structure (e.g. POST /jobs/{jobId}/quotes)
-- Resource-oriented URL patterns
-
-### Data Storage Design (from db-schema-dynamo-db)
-- DynamoDB single-table design (SubcontractorCore)
-- Partition key (PK) / Sort key (SK) patterns
-- GSI1 by status, GSI2 by client
-
-### Workflow Design (from step-functions)
-- AWS Step Functions for job lifecycle, billing, and variation workflows
-- Specific Lambda function names and state machine structure
-- Task token pattern for human approvals
-
-### Event Architecture (from event-model, event-driven-state-machine)
-- EventBridge as event bus
-- Specific event JSON payloads
-- Event-driven decoupling between services
-
-### Infrastructure Patterns (from cdk-shape)
-- Separate CDK stacks for Core API, Workflows, Frontend
-- Cognito authorization on API methods
-- PAY_PER_REQUEST billing mode for DynamoDB
-
-### Frontend Design (from front-end-ux-flows + mockups)
-- Mobile-first responsive design
-- "ARCH Developments" branding with dark blue header
-- Specific tile/card layout for dashboard
-- Bottom action bar with 4 buttons
-- S3 pre-signed URLs for photo upload
-
-### Observability (from aws-system-view)
-- CloudWatch Logs + Metrics + Alarms
-- X-Ray tracing
-- OpenSearch for cross-system search (optional)
+- NFR-01: **Scalability** — serverless auto-scaling; handle variable construction-season load spikes
+- NFR-02: **Availability** — no single point of failure; multi-AZ Lambda and DynamoDB
+- NFR-03: **Security** — Cognito auth; role-scoped API access; encrypted S3 and DynamoDB at rest; HTTPS only
+- NFR-04: **Auditability** — full audit trail: DynamoDB event records + EventBridge events + CloudWatch logs
+- NFR-05: **Extensibility** — event-driven architecture; new consumers can subscribe to domain events without modifying existing services
+- NFR-06: **Offline capability** — daily log submission and photo upload must work offline on-site (PWA service worker + IndexedDB queue + background sync)
+- NFR-07: **Mobile-first** — all screens optimised for phone use on construction sites
 
 ---
 
-## Key Observations
+## 5. Out of Scope (This Phase)
 
-1. **The document is heavily design-forward** — it jumps straight to AWS services, DynamoDB schemas, and CDK code without a formal requirements document. The requirements are implicitly embedded in the process flows and DDD model.
-
-2. **The invariants in the DDD model are the closest thing to formal requirements** — these are business rules that must be enforced regardless of implementation.
-
-3. **The vendor discussion notes reveal concerns**: the vendor has no domain knowledge, is using AI to generate the entire design, and there are questions about change management and whether existing solutions (Tradify, Procore, SiteConnect) were evaluated.
-
-4. **Missing requirements**: No mention of user authentication flows, password policies, data retention policies, reporting/analytics, multi-tenancy, mobile offline support, or performance targets (response times, concurrent users).
-
-5. **The 3 UI mockups** show: (a) Sub-contractor dashboard with active jobs, quotes, variations, claims sections + action buttons, (b) Create Progress Claim form with measured work, approved variations, retention calculation, (c) QS Review Progress Claim with approve/reject actions and notes field.
+- Client portal / client login
+- QS (Quantity Surveyor) as a system user
+- Inbound email parsing
+- Payment dispute workflow
+- Cross-entity full-text search
+- Scope change auto-detection
+- Variable workflow configuration per job type
+- CI/CD pipeline (deferred to Phase 6)

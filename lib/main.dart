@@ -6,9 +6,16 @@ import 'package:flutter/material.dart';
 
 import 'amplify_outputs.dart';
 import 'models/ModelProvider.dart'; // retained for Amplify API plugin options
+import 'screens/admin/dashboard_screen.dart';
 import 'screens/role_select_screen.dart';
+import 'screens/site_manager/dashboard_screen.dart';
+import 'utils/app_drawer.dart';
 
 Future<void> main() async {
+  registerDrawerBuilders(
+    adminDashboard: () => const AdminDashboardScreen(),
+    siteManagerDashboard: () => const SiteManagerDashboardScreen(),
+  );
   try {
     WidgetsFlutterBinding.ensureInitialized();
     await _configureAmplify();

@@ -10,7 +10,21 @@
       "Bash(cmd /c \"flutter analyze lib/ 2>&1\")",
       "Bash(powershell -Command \"cd 'C:\\\\dev\\\\flutter_projs\\\\arch_dev'; flutter analyze lib/ 2>&1\")",
       "Read(//c/dev/flutter_projs/arch_dev/**)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(./node_modules/.bin/tsc -p amplify/tsconfig.json --noEmit)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('version', 'unknown'\\)\\)\")",
+      "Bash(xargs grep:*)",
+      "Bash(grep -rn \"allow.resource\\\\|resourceAccessFunction\\\\|defineData\" node_modules/@aws-amplify/backend/dist/esm/*.d.ts)",
+      "Bash(grep -rn \"defineData\\\\|resourceAccessFunction\\\\|allow.resource\" node_modules/@aws-amplify/backend-data/dist/esm/*.d.ts)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(/c/dev/flutter/bin/dart analyze:*)",
+      "Bash(node -e \"const p = require\\('./node_modules/aws-cdk-lib/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); const p=JSON.parse\\(fs.readFileSync\\('/dev/stdin','utf8'\\)\\); console.log\\(JSON.stringify\\({scripts:p.scripts, devDependencies:Object.keys\\(p.devDependencies||{}\\), dependencies:Object.keys\\(p.dependencies||{}\\)}, null, 2\\)\\)\")",
+      "Bash(node -e \"require\\('aws-amplify/api'\\); console.log\\('ok'\\)\")",
+      "Bash(grep -rn \"credentialsProvider\\\\|getCredentialsAndIdentityId\\\\|LibraryOptions\" node_modules/@aws-amplify/core/dist/esm/*.d.ts)",
+      "Bash(xargs sed:*)"
     ]
   }
 }

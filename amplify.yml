@@ -8,6 +8,7 @@ backend:
   cache:
     paths:
       - .npm/**/*
+
 frontend:
   phases:
     preBuild:
@@ -16,13 +17,28 @@ frontend:
         - export PATH="$PATH:$HOME/flutter/bin"
         - flutter precache --web
         - flutter --version
-        # Regenerate amplify_outputs.dart from the deployed backend
+        # Generate Dart outputs for the Flutter app
         - npx ampx generate outputs --branch $AWS_BRANCH --app-id $AWS_APP_ID --format dart --out-dir lib
+        # Generate JSON outputs for integration tests
+        - npx ampx generate outputs --branch $AWS_BRANCH --app-id $AWS_APP_ID --format json --out-dir scripts/integration-tests
         - flutter pub get
     build:
       commands:
         - export PATH="$PATH:$HOME/flutter/bin"
         - flutter build web --release
+    postBuild:
+      commands:
+        # Run backend smoke tests only when test credentials are provided.
+        # Set TEST_USER_EMAIL and TEST_USER_PASSWORD as environment variables
+        # in the Amplify Console (App settings > Environment variables) to
+        # enable post-deployment verification.
+        - |
+          if [ -n "$TEST_USER_EMAIL" ] && [ -n "$TEST_USER_PASSWORD" ]; then
+            echo "Running backend smoke tests as $TEST_USER_EMAIL"
+            npx tsx scripts/integration-tests/smoke-test.ts
+          else
+            echo "Skipping smoke tests — TEST_USER_EMAIL / TEST_USER_PASSWORD not set"
+          fi
   artifacts:
     baseDirectory: build/web
     files:
