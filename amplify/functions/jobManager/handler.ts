@@ -117,15 +117,17 @@ async function updateJob(args: JobManagerArgs): Promise<string> {
   console.log('[jobManager] updateJob | existing fields:', Object.keys(existing).join(', '));
 
   const input: Record<string, unknown> = { ...forUpdate(existing), id: args.jobId };
-  if (args.clientName !== undefined)        input.clientName = args.clientName;
-  if (args.clientContactName !== undefined) input.clientContactName = args.clientContactName;
-  if (args.clientEmail !== undefined)       input.clientEmail = args.clientEmail;
-  if (args.clientPhone !== undefined)       input.clientPhone = args.clientPhone;
-  if (args.siteAddress !== undefined)       input.siteAddress = args.siteAddress;
-  if (args.description !== undefined)       input.description = args.description;
-  if (args.contractType !== undefined)      input.contractType = args.contractType;
-  if (args.paymentTerms !== undefined)      input.paymentTerms = args.paymentTerms;
-  if (args.status !== undefined)            input.status = args.status;
+  // AppSync passes null (not undefined) for omitted optional arguments, so guard
+  // against both null and undefined to avoid overwriting existing field values.
+  if (args.clientName != null)        input.clientName = args.clientName;
+  if (args.clientContactName != null) input.clientContactName = args.clientContactName;
+  if (args.clientEmail != null)       input.clientEmail = args.clientEmail;
+  if (args.clientPhone != null)       input.clientPhone = args.clientPhone;
+  if (args.siteAddress != null)       input.siteAddress = args.siteAddress;
+  if (args.description != null)       input.description = args.description;
+  if (args.contractType != null)      input.contractType = args.contractType;
+  if (args.paymentTerms != null)      input.paymentTerms = args.paymentTerms;
+  if (args.status != null)            input.status = args.status;
 
   console.log('[jobManager] updateJob | step: UPDATE with fields:', Object.keys(input).join(', '));
   const { data, errors } = await client.graphql({

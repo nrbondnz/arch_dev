@@ -104,10 +104,10 @@ async function updateQuote(args: QuoteManagerArgs): Promise<string> {
   }
 
   const input: Record<string, unknown> = { ...forUpdate(existing), id: args.quoteId };
-  if (args.exclusions !== undefined)  input.exclusions = args.exclusions;
-  if (args.assumptions !== undefined) input.assumptions = args.assumptions;
-  if (args.validUntil !== undefined)  input.validUntil = args.validUntil;
-  if (args.notes !== undefined)       input.notes = args.notes;
+  if (args.exclusions != null)  input.exclusions = args.exclusions;
+  if (args.assumptions != null) input.assumptions = args.assumptions;
+  if (args.validUntil != null)  input.validUntil = args.validUntil;
+  if (args.notes != null)       input.notes = args.notes;
 
   const { data, errors } = await client.graphql({
     query: UPDATE_QUOTE,

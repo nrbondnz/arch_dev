@@ -156,14 +156,14 @@ async function updateVariation(args: VariationManagerArgs): Promise<string> {
   }
 
   const input: Record<string, unknown> = { ...forUpdate(existing), id: args.variationId };
-  if (args.description !== undefined)       input.description = args.description;
-  if (args.reason !== undefined)            input.reason = args.reason;
-  if (args.clientInitiated !== undefined)   input.clientInitiated = args.clientInitiated;
-  if (args.clientContactName !== undefined) input.clientContactName = args.clientContactName;
-  if (args.price !== undefined)             input.price = args.price;
-  if (args.timeImpactDays !== undefined)    input.timeImpactDays = args.timeImpactDays;
-  if (args.notes !== undefined)             input.notes = args.notes;
-  if (args.price !== undefined && existing.status === 'Logged') {
+  if (args.description != null)       input.description = args.description;
+  if (args.reason != null)            input.reason = args.reason;
+  if (args.clientInitiated != null)   input.clientInitiated = args.clientInitiated;
+  if (args.clientContactName != null) input.clientContactName = args.clientContactName;
+  if (args.price != null)             input.price = args.price;
+  if (args.timeImpactDays != null)    input.timeImpactDays = args.timeImpactDays;
+  if (args.notes != null)             input.notes = args.notes;
+  if (args.price != null && existing.status === 'Logged') {
     input.status = 'PricedUp';
   }
 

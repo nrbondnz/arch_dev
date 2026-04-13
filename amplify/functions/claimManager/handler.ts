@@ -185,9 +185,9 @@ async function updateClaim(args: ClaimManagerArgs): Promise<string> {
   }
 
   const input: Record<string, unknown> = { ...forUpdate(existing), id: args.claimId };
-  if (args.periodDescription !== undefined)   input.periodDescription = args.periodDescription;
-  if (args.variationsIncluded !== undefined)  input.variationsIncluded = args.variationsIncluded;
-  if (args.notes !== undefined)               input.notes = args.notes;
+  if (args.periodDescription != null)   input.periodDescription = args.periodDescription;
+  if (args.variationsIncluded != null)  input.variationsIncluded = args.variationsIncluded;
+  if (args.notes != null)               input.notes = args.notes;
 
   const { data, errors } = await client.graphql({
     query: UPDATE_CLAIM,
