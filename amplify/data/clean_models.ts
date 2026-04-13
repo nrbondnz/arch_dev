@@ -66,7 +66,9 @@ export type TaskStatus = 'Pending' | 'InProgress' | 'Completed';
 
 // ── Manager arg types ─────────────────────────────────────────────────────────
 
-export type JobApiFunction = 'createJob' | 'updateJob' | 'getJob' | 'listJobs' | 'listJobIds' | 'deleteJob';
+export type JobApiFunction =
+  | 'createJob' | 'updateJob' | 'getJob' | 'listJobs' | 'listJobIds' | 'deleteJob'
+  | 'createStage' | 'createWorkPackage';
 
 export interface JobManagerArgs {
   apiFunction: JobApiFunction;
@@ -80,6 +82,19 @@ export interface JobManagerArgs {
   contractType?: string;
   paymentTerms?: string;
   status?: string;
+  // Stage fields
+  stageId?: string;
+  sequence?: number;
+  scheduledValue?: number;
+  triggerType?: string;
+  triggerValue?: string;
+  retentionRate?: number;
+  percentComplete?: number;
+  // WorkPackage fields
+  siteManagerId?: string;
+  plannedStart?: string;
+  plannedEnd?: string;
+  relatedStageIds?: string[];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

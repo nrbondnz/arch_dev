@@ -49,6 +49,18 @@ const LIST_JOB_IDS = `
   }
 `;
 
+const CREATE_STAGE = `
+  mutation CreateStage($input: CreateStageInput!) {
+    createStage(input: $input) { id jobId description sequence status }
+  }
+`;
+
+const CREATE_WORK_PACKAGE = `
+  mutation CreateWorkPackage($input: CreateWorkPackageInput!) {
+    createWorkPackage(input: $input) { id jobId description status }
+  }
+`;
+
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 export const handler = createBaseHandler(async (event: unknown) => {
@@ -61,7 +73,9 @@ export const handler = createBaseHandler(async (event: unknown) => {
     case 'getJob':     return await getJob(args);
     case 'listJobs':   return await listJobs(args);
     case 'deleteJob':  return await deleteJobCascade(args);
-    case 'listJobIds': return await listJobIds();
+    case 'listJobIds':        return await listJobIds();
+    case 'createStage':       return await createStage(args);
+    case 'createWorkPackage': return await createWorkPackage(args);
     default:
       return fail('UNKNOWN_FUNCTION', `Unknown apiFunction: ${args.apiFunction}`);
   }
@@ -226,6 +240,52 @@ async function deleteById(mutationName: string, id: string): Promise<void> {
     variables: { id },
   }) as { data: unknown; errors?: unknown[] };
   if (errors?.length) console.warn(`[deleteById] ${mutationName} ${id}:`, JSON.stringify(errors));
+}
+
+async function createStage(args: JobManagerArgs): Promise<string> {
+  if (!args.jobId || !args.description || args.sequence == null || args.scheduledValue == null || !args.triggerType || !args.status) {
+    return fail('VALIDATION_ERROR', 'jobId, description, sequence, scheduledValue, triggerType, and status are required');
+  }
+  const { data, errors } = await client.graphql({
+    query: CREATE_STAGE,
+    variables: {
+      input: {
+        jobId: args.jobId,
+        sequence: args.sequence,
+        description: args.description,
+        scheduledValue: args.scheduledValue,
+        triggerType: args.triggerType,
+        ...(args.triggerValue != null && { triggerValue: args.triggerValue }),
+        ...(args.retentionRate != null && { retentionRate: args.retentionRate }),
+        ...(args.percentComplete != null && { percentComplete: args.percentComplete }),
+        status: args.status,
+      },
+    },
+  }) as { data: { createStage: Record<string, unknown> }; errors?: unknown[] };
+  if (errors?.length) return fail('CREATE_FAILED', (errors[0] as { message?: string }).message ?? JSON.stringify(errors[0]));
+  return ok(data?.createStage);
+}
+
+async function createWorkPackage(args: JobManagerArgs): Promise<string> {
+  if (!args.jobId || !args.description || !args.status) {
+    return fail('VALIDATION_ERROR', 'jobId, description, and status are required');
+  }
+  const { data, errors } = await client.graphql({
+    query: CREATE_WORK_PACKAGE,
+    variables: {
+      input: {
+        jobId: args.jobId,
+        description: args.description,
+        status: args.status,
+        ...(args.siteManagerId != null && { siteManagerId: args.siteManagerId }),
+        ...(args.plannedStart != null && { plannedStart: args.plannedStart }),
+        ...(args.plannedEnd != null && { plannedEnd: args.plannedEnd }),
+        ...(args.relatedStageIds != null && { relatedStageIds: args.relatedStageIds }),
+      },
+    },
+  }) as { data: { createWorkPackage: Record<string, unknown> }; errors?: unknown[] };
+  if (errors?.length) return fail('CREATE_FAILED', (errors[0] as { message?: string }).message ?? JSON.stringify(errors[0]));
+  return ok(data?.createWorkPackage);
 }
 
 async function listJobIds(): Promise<string> {

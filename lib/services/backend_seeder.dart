@@ -278,13 +278,23 @@ class BackendSeeder {
           $clientContactName: String, $clientEmail: String,
           $clientPhone: String, $siteAddress: String,
           $description: String, $contractType: String,
-          $paymentTerms: String, $status: String) {
+          $paymentTerms: String, $status: String,
+          $stageId: ID, $sequence: Int, $scheduledValue: Float,
+          $triggerType: String, $triggerValue: String,
+          $retentionRate: Float, $percentComplete: Float,
+          $siteManagerId: String, $plannedStart: String,
+          $plannedEnd: String, $relatedStageIds: [String]) {
       callJobManagerAPI(apiFunction: $apiFunction, jobId: $jobId,
         clientName: $clientName, clientContactName: $clientContactName,
         clientEmail: $clientEmail, clientPhone: $clientPhone,
         siteAddress: $siteAddress, description: $description,
         contractType: $contractType, paymentTerms: $paymentTerms,
-        status: $status)
+        status: $status, stageId: $stageId, sequence: $sequence,
+        scheduledValue: $scheduledValue, triggerType: $triggerType,
+        triggerValue: $triggerValue, retentionRate: $retentionRate,
+        percentComplete: $percentComplete, siteManagerId: $siteManagerId,
+        plannedStart: $plannedStart, plannedEnd: $plannedEnd,
+        relatedStageIds: $relatedStageIds)
     }
   ''';
 
@@ -342,18 +352,6 @@ class BackendSeeder {
     }
   ''';
 
-  // Direct model mutations for models without a manager yet
-  static const _createStageDoc = r'''
-    mutation($input: CreateStageInput!) {
-      createStage(input: $input) { id jobId description sequence status }
-    }
-  ''';
-
-  static const _createWpDoc = r'''
-    mutation($input: CreateWorkPackageInput!) {
-      createWorkPackage(input: $input) { id jobId description status }
-    }
-  ''';
 
   // ── Cleanup ──────────────────────────────────────────────────────────────────
 
@@ -416,10 +414,10 @@ class BackendSeeder {
       _callManager(_claimQuery, vars, 'callClaimManagerAPI');
 
   Future<Map<String, dynamic>> _createStage(Map<String, dynamic> fields) =>
-      _mutate(_createStageDoc, {'input': fields}, 'createStage');
+      _callJob({'apiFunction': 'createStage', ...fields});
 
   Future<Map<String, dynamic>> _createWorkPackage(Map<String, dynamic> fields) =>
-      _mutate(_createWpDoc, {'input': fields}, 'createWorkPackage');
+      _callJob({'apiFunction': 'createWorkPackage', ...fields});
 
   // ── Core GraphQL helpers ─────────────────────────────────────────────────────
 
@@ -469,24 +467,6 @@ class BackendSeeder {
     return (result['data'] as Map<String, dynamic>?) ?? {};
   }
 
-  Future<Map<String, dynamic>> _mutate(
-    String document,
-    Map<String, dynamic> variables,
-    String fieldName,
-  ) async {
-    final request = GraphQLRequest<String>(
-      document: document,
-      variables: variables,
-    );
-    final response = await Amplify.API.mutate(request: request).response;
-    _checkErrors(response.errors, fieldName);
-
-    final raw = response.data;
-    if (raw == null) throw Exception('$fieldName returned null');
-
-    final result = jsonDecode(raw) as Map<String, dynamic>;
-    return (result[fieldName] as Map<String, dynamic>?) ?? {};
-  }
 
   void _checkErrors(List<GraphQLResponseError> errors, String context) {
     if (errors.isNotEmpty) {

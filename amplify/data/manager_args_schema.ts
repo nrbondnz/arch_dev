@@ -21,6 +21,19 @@ export const jobManagerArgsSchemaFields = {
   contractType:       a.string(),
   paymentTerms:       a.string(),
   status:             a.string(),
+  // Stage fields
+  stageId:            a.id(),
+  sequence:           a.integer(),
+  scheduledValue:     a.float(),
+  triggerType:        a.string(),
+  triggerValue:       a.string(),
+  retentionRate:      a.float(),
+  percentComplete:    a.float(),
+  // WorkPackage fields
+  siteManagerId:      a.string(),
+  plannedStart:       a.string(),
+  plannedEnd:         a.string(),
+  relatedStageIds:    a.string().array(),
 };
 
 export const quoteManagerArgsSchemaFields = {
